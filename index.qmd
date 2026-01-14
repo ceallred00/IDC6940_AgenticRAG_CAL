@@ -1,7 +1,7 @@
 ---
-title: "Writing a great story for data science projects - Fall 2025 "
+title: "Optimizing Agentic Retrieval-Augmented Generation: An Analysis of Single vs. Multi-Agent Workflows"
 subtitle: "This is a Report Template Quarto"
-author: "Student Name (Advisor: Dr. Cohen)"
+author: "Cheyanne Allred-Lopez (Advisor: Dr. Cohen)"
 date: '`r Sys.Date()`'
 format:
   html:
