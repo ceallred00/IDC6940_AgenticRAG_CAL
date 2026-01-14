@@ -15,7 +15,7 @@ editor:
   markdown: 
     wrap: 72
 ---
-
+:)
 ::: callout-important
 **Remember:** Your goal is to make your audience understand and care
 about your findings. By crafting a compelling story, you can effectively
