@@ -55,12 +55,10 @@ In the context of a RAG-enabled agentic advisor, one or more of the agent's acti
 
 Agentic systems can contain one or more agents chained together, with research indicating that a well-designed multi-agent system can outperform a monolithic system [@AgenticAI2025Jagga]. Multi-agent systems may utilize a hierarchical architecture, where a higher-level agent delegates tasks to a lower-level agent, allowing for agent specialization and efficient resource allocation.  Consensus-based coordination excels in scenarios with high uncertainty, allowing agents to reach a consensus based on collective decision-making. In the context of a RAG architecture, a centralized agent may designate RAG-related tasks to one or more RAG-enabled agents. Consensus-based coordination may be used to determine the quality of the retrieved context prior to generating a response for the user, utilizing scoring metrics or re-ranking algorithms. This is an agentic implementation of Advanced RAG's post-processing techniques.
 
-The reviewed literature comprehensively documents the RAG architecture and recent advancements to include Naive RAG, Advanced RAG, Modular RAG, Agentic RAG, and human-in-the-loop architectures. It also introduces a novel methodology for evaluating retrieval quality independent of generation, improving overall RAG system performance. However, 
+The reviewed literature comprehensively documents the RAG architecture and recent advancements to include Naive RAG, Advanced RAG, Modular RAG, Agentic RAG, and human-in-the-loop architectures. In these studies, performance was systematically evaluated using common benchmarking datasets and metrics; however, limited research exists which evaluates the application of Advanced RAG or Modular RAG techniques in agentic systems, specifically one employed in a domain-specific application. Furthermore, 
 
 
-
-
-**NOT FINISHED - Finishing with current gap, my implementation + research question**
+**Look into discussing https://aclanthology.org/2025.magmar-1.2.pdf - Single agent multi-modal, no published metrics.*
 
 ### Sentences that I've typed and will probably use somewhere
 
@@ -80,10 +78,87 @@ ____
 
 -   Justify your choices based on the problem and data.
 
+### Knowledge Base Development
+
+The RAG pipeline's knowledge base is comprised of content from the University of West Florida's Public Knowledge Base and the Department of Mathematics and Statistics' 2024-2025 Graduate Student Handbook. More information about the sourced data, including the raw data ingestion and data pre-processing methods applied, can be found in the [Data Exploration and Visualization](### Data Exploration and Visualization) section below. Once ingested, both document sources utilized the same chunking and indexing strategies detailed below. 
+
+#### Chunking Strategy
+
+The corpus utilizes a hierarchical-recursive chunking strategy. Each page was split on headers, using LangChain's MarkdownHeaderTextSplitter method. While initial iterations split on Level 1 through level 4 headers, the strategy was refined to split on Level 1 through 2 headers following baseline testing, preventing overly-granular chunks. Headers were retained within each chunk's content, rather than stripped. This retains critical labels which add semantic context, increasing the likelihood of retrieval.
+
+Then, LangChain's RecursiveCharacterTextSplitter method was used to split each chunk recursively, with a 2000 character-limit and a  400-character (20%) sliding window overlap. This ensures each chunk has adequate context, without obscuring specific details which may be needed for factual queries. The sliding window also helps to preserve context across split texts. This strategy is in alignment with industry best practices [@2025chunkingbps]. Each chunk was assigned a custom, deterministic ID, using either the Confluence Page ID for pages scraped from the knowledge base or the document title for ad hoc documents. 
+
+The applicable metadata was extracted from each chunk. For adhoc documents, this includes the source document's file name, the chunk ID, and the header hierarchy. For documents scraped from UWF's Confluence tree, metadata also included the page's path (for nested documents), URL, version number, and last updated date. These were attached to each chunk as metadata prior to upsertion, enabling easy filtering if needed. The metadata was also prepended for content enrichment, prior to vectorization, providing additional context for the retriever to use when retrieving relevant information.
+
+** Insert Metadata / Context Before/After Here **
+
+
+
+#### Indexing Strategy
+
+#### Embedding Process
+
+#### Vector Upsertion
+
+### RAG Pipeline Performance Testing and Optimization
+
+As encouraged by @gao2024rag, the RAG pipeline's retriever and generator were tested independently. Independent testing allows for more nuanced diagnostics and targeted improvements. Poor retriever performance may be improved by optimizing the knowledge base's data-preparation and indexing strategies, or by applying query pre-processing techniques. Improving retriever performance should subsequently improve generation performance; however, post-retrieval techniques, such as re-ranking or context compression, may also help to improve generation performance. Model fine-tuning was considered out of scope for this project.
+
+#### RAG Retriever Testing
+
+Improving the quality of content returned from the vector store subsequently improves the entire pipeline's performance, thus great care was taken to optimize the RAG retriever. Retriever testing was performed on three 50-question, independent datasets, withholding one 50-question dataset for final testing. The other two datasets were used for pipeline optimization. 
+
+The Ragas Python library was used to evaluate the retriever's performance, using two critical metrics: Context Precision and Context Recall [@ragas_api_reference]. Both methods implement LLM-as-a-judge; OpenAI's gpt-4o model was utilized, balancing high reasoning capabilities with lower cost, when compared to newer models such as gpt-5. The model was invoked with temperature = 0.0, to ensure the results were as deterministic and repeatable as possible.
+
+Precision focuses on the relevancy of the returned results and is computed as the ratio of relevant chunks to total chunks. Retrievals which return a larger amount of relevant chunks will consequently have a higher ratio and return a higher score. Context Precision accounts for the order with which results are retrieved. For each chunk, it multiplies the running precision at chunk k by a binary relevance indicator, $v_k$, where 1 is relevant and 0 is an irrelevant chunk. This is then summed and divided by the total number of relevant chunks. It is calculated as follows: $$\text{Context Precision} = \frac{\sum_{k=1}^{K}(\text{Precision@k} * v_k)}{\text{Total Number of Relevant Items in K Results}}$$ [@ragas_context_precision]. For example, if the retriever returned 5 total results, 3 of which were deemed by the LLM to be relevant. The relevant chunks were placed at positions 1, 3 and 5 respectively. Overall precision is $\frac{3}{5}$. The Context Precision is then: $$\frac{(\frac{1}{1} * 1) + (\frac{1}{2} * 0) + (\frac{2}{3} * 1) + (\frac{2}{4} * 0) + (\frac{3}{5} * 1)}{3} = 0.76 $$
+
+Context recall is simpler in that it evaluates whether all of the relevant content, broken into individual claims, was retrieved [@ragas_context_recall]. $$\text{Context Recall} = \frac{\text{Number of ground truth claims supported by the retrieved contexts}}{\text{Total number of claims in the ground truth}}$$ A higher score indicates that more of the ground truth was retrieved.
+
+The pipeline process is as follows:
+
+* Generate embeddings for each query using the pinecone-sparse-english-v0 model (sparse-encoded) and gemini-embeddings-001 (dense). This is consistent with the models utilized to develop the knowledge base.
+* Retrieve the top-k results, where k is specified at the time of testing. For a dataset with 50 questions, where k = 5 results were retrieved, this produces a set of 50 question / context sets, where each context set contains the k = 5 retrieved chunks.
+* Evaluate the retriever's performance, computing Context Precision and Context Recall for each question and associated context set. Context Precision calls the Ragas LLM (gpt-4o) k times, one for each retrieved chunk, whereas Context Recall calls the Ragas LLM once per question. 
+* Document individual scores and compute aggregrate metrics across the dataset.
+* Repeat five times per model iteration, documenting cross-run metrics (average and standard-deviation) for comparison.
+
+![RAG Retrieval Evaluation Pipeline](RAG Retriever Eval Pipeline.png)
+
+Because both Context Precision and Context Recall utilize LLM-as-a-judge, repeating the pipeline over a specific number of iterations is important for ensuring that the results are consistent and repeatable.
+
+The testing process is resource intensive. Testing a dataset of 50 questions, retrieving k=5 results per question, requires 400 total API calls:
+
+- 50 calls to Sparse Embedding Model
+- 50 calls to Dense Embedding Model
+- 300 calls to Ragas LLM:
+  - 250 calls for Context Precision (5 per question)
+  - 50 calls for Context Recall (one per question)
+  
+Running the pipeline for a single model iteration makes 2000 total API calls. 500 API calls to the Embedding Models, 1500 API calls to a generative LLM.
+
+The pipeline utilizes Ragas v0.4 Collections API and the asyncio Python library to perform asynchronous Ragas metric computation. Though the pipeline makes k API calls for each question, the calls are performed nearly simultaneously, significantly reducing the time it takes to execute the pipeline.
+
+#### RAG Retriever Optimization
+
+
+
+#### RAG Generation Testing
+
+
 
 ## Analysis and Results
 
 ### Data Exploration and Visualization
+
+#### RAG Knowledge Base Dataset
+
+#### Performance Evaluation Dataset
+
+
+
+### RAG Pipeline Performance Analysis
+
+Using the methodology performed above, the RAG retriever's performance was evaluated 
 
 -   Describe your data sources and collection process.
 
