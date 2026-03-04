@@ -320,29 +320,28 @@ techniques provides the optimal performance in an academic environment.
 
 ### Knowledge Base Development
 
-The RAG pipeline's knowledge base is comprised of content from the
+The RAG pipeline's knowledge base is composed of content from the
 University of West Florida's Public Knowledge Base and the Department of
 Mathematics and Statistics' 2024-2025 Graduate Student Handbook. More
 information about the sourced data, including the raw data ingestion and
 data pre-processing methods applied, can be found in the [Data
-Exploration and
-Visualization](###%20Data%20Exploration%20and%20Visualization) section.
-Once ingested, both document sources utilized the same chunking and
-indexing strategies detailed below.
+Exploration and Visualization] section. Once ingested, both document
+sources utilized the same chunking and indexing strategies detailed
+below.
 
 #### Chunking Strategy
 
 The corpus utilizes a hierarchical-recursive chunking strategy. Each
 page was split on headers, using LangChain's MarkdownHeaderTextSplitter
-method. While initial iterations split on Level 1 through level 4
-headers, the strategy was refined to split on Level 1 through 2 headers
-following baseline testing, preventing overly-granular chunks. Headers
-were retained within each chunk's content, rather than stripped. This
-retains critical labels which add semantic context, increasing the
-likelihood of retrieval.
+method. While initial iterations split on Levels 1 through 4 headers,
+the strategy was refined to split on Level 1 through 2 headers following
+baseline testing, preventing overly-granular chunks. Headers were
+retained within each chunk's content, rather than stripped. This retains
+critical labels which add semantic context, increasing the likelihood of
+retrieval.
 
 Then, LangChain's RecursiveCharacterTextSplitter method was used to
-split each chunk recursively, with a 2000 character-limit and a
+split each chunk recursively, with a 2000-character limit and a
 400-character (20%) sliding window overlap. This ensures each chunk has
 adequate context, without obscuring specific details which may be needed
 for factual queries. The sliding window also helps to preserve context
@@ -351,7 +350,15 @@ practices [@2025chunkingbps]. Each chunk was assigned a custom,
 deterministic ID, using either the Confluence Page ID for pages scraped
 from the knowledge base or the document title for ad hoc documents.
 
-The applicable metadata was extracted from each chunk. For adhoc
+Each chunk was then filtered for noise, using both deterministic rules
+and LLM judgement. Rule-based filtering was applied where there was
+little risk of removing semantically relevant content. An LLM was called
+for chunks matching specific patterns (e.g., "This page contains") that
+contained semantically-relevant but non-substantive content. Concrete
+examples of filtering can be found in the [RAG Retriever Optimization]
+section below.
+
+The applicable metadata was extracted from each chunk. For ad hoc
 documents, this includes the source document's file name, the chunk ID,
 and the header hierarchy. For documents scraped from UWF's Confluence
 tree, metadata also included the page's path (for nested documents),
@@ -368,6 +375,8 @@ vectorization, providing additional context for the retriever.
 
 #### Vector Upsertion
 
+#### RAG Pipeline
+
 ### RAG Pipeline Performance Testing and Optimization
 
 As encouraged by @gao2024rag, the RAG pipeline's retriever and generator
@@ -383,11 +392,11 @@ Model fine-tuning was considered out of scope for this project.
 #### RAG Retriever Testing
 
 Improving the quality of content returned from the vector store
-subsequently improves the entire pipeline's performance, thus great care
-was taken to optimize the RAG retriever. Retriever testing was performed
-on three 50-question, independent datasets, withholding one 50-question
-dataset for final testing. The other two datasets were used for pipeline
-optimization.
+subsequently improves the entire pipeline's performance; thus, great
+care was taken to optimize the RAG retriever. Retriever testing was
+performed on three 50-question, independent datasets, withholding one
+50-question dataset for final testing. The other two datasets were used
+for pipeline optimization.
 
 The Ragas Python library was used to evaluate the retriever's
 performance, using two critical metrics: Context Precision and Context
@@ -407,9 +416,9 @@ indicator, $v_k$, where 1 is relevant and 0 is an irrelevant chunk. This
 is then summed and divided by the total number of relevant chunks. It is
 calculated as follows:
 $$\text{Context Precision} = \frac{\sum_{k=1}^{K}(\text{Precision@k} * v_k)}{\text{Total Number of Relevant Items in K Results}}$$
-[@ragas_context_precision]. For example, if the retriever returned 5
-total results, 3 of which were deemed by the LLM to be relevant. The
-relevant chunks were returned by the retriever at positions 1, 3 and 5
+[@ragas_context_precision]. For example, consider a retriever that
+returns 5 total results, 3 of which were deemed by the LLM to be
+relevant. The relevant chunks were returned at positions 1, 3 and 5
 respectively. Overall precision is $\frac{3}{5}$. The Context Precision
 is then:
 $$\frac{(\frac{1}{1} * 1) + (\frac{1}{2} * 0) + (\frac{2}{3} * 1) + (\frac{2}{4} * 0) + (\frac{3}{5} * 1)}{3} = 0.76 $$
@@ -420,9 +429,9 @@ relevant content, broken into individual claims, was retrieved
 $$\text{Context Recall} = \frac{\text{Number of ground truth claims supported by the retrieved contexts}}{\text{Total number of claims in the ground truth}}$$
 A higher score indicates that more of the ground truth was retrieved.
 
-The pipeline process begins by generating embeddings for each query
-using the pinecone-sparse-english-v0 model (sparse-encoded) and
-gemini-embeddings-001 (dense). This is consistent with the models
+The RAG retriever evaluation process begins by generating embeddings for
+each query using the pinecone-sparse-english-v0 model (sparse-encoded)
+and gemini-embeddings-001 (dense). This is consistent with the models
 utilized to develop the knowledge base. Then, the top-k results are
 retrieved, where k is specified at the time of testing. For a dataset
 with 50 questions, where k = 5 results were retrieved, this produces a
@@ -434,10 +443,10 @@ times, one for each retrieved chunk, whereas Context Recall calls the
 Ragas LLM once per question. These individual metrics are recorded per
 question, then aggregated across the entire dataset. This process is
 then repeated five times per RAG pipeline design, documenting cross-run
-metrics (average and standard-deviation) for comparison.
+metrics (average and standard deviation) for comparison.
 
 ![RAG Retrieval Evaluation
-Pipeline](RAG%20Retriever%20Eval%20Pipeline.png)
+Pipeline](Images/RAG Retriever Eval Pipeline.png){fig-align="center"}
 
 The pipeline utilizes Ragas v0.4 Collections API and the asyncio Python
 library to perform asynchronous Ragas metric computation. Though the
@@ -448,34 +457,141 @@ Precision and Context Recall utilize LLM-as-a-judge, repeating the
 pipeline over a specific number of iterations is important for ensuring
 that the results are consistent and repeatable.
 
-The testing process is resource intensive. Testing a dataset of 50
-questions, retrieving k=5 results per question, requires 400 total API
-calls:
+The testing process is computationally intensive. Testing a dataset of
+50 questions, retrieving k=5 results per question, requires 400 total
+API calls:
 
-+----------------------+----------------------+----------------------+
-| Number of API Calls: | Model:               | Purpose:             |
-+:====================:+:====================:+:====================:+
-| 50                   | pineco               | Generate Sparse      |
-|                      | ne-sparse-english-v0 | Embeddings           |
-+----------------------+----------------------+----------------------+
-| 50                   | g                    | Generate Dense       |
-|                      | emini-embeddings-001 | Embeddings           |
-+----------------------+----------------------+----------------------+
-| 250                  | gpt-4o               | Compute Context      |
-|                      |                      | Precision - \        |
-|                      |                      | k calls per question |
-+----------------------+----------------------+----------------------+
-| 50                   | gpt-4o               | Compute Context      |
-|                      |                      | Recall -             |
-|                      |                      |                      |
-|                      |                      | 1 call per question  |
-+----------------------+----------------------+----------------------+
++--------------------+--------------------+--------------------+
+| Number of API      | Model:             | Purpose:           |
+| Calls:             |                    |                    |
++:==================:+:==================:+:==================:+
+| 50                 | pinecone           | Generate Sparse    |
+|                    | -sparse-english-v0 | Embeddings         |
++--------------------+--------------------+--------------------+
+| 50                 | gem                | Generate Dense     |
+|                    | ini-embeddings-001 | Embeddings         |
++--------------------+--------------------+--------------------+
+| 250                | gpt-4o             | Compute Context    |
+|                    |                    | Precision -\       |
+|                    |                    | k calls per        |
+|                    |                    | question           |
++--------------------+--------------------+--------------------+
+| 50                 | gpt-4o             | Compute Context    |
+|                    |                    | Recall -           |
+|                    |                    |                    |
+|                    |                    | 1 call per         |
+|                    |                    | question           |
++--------------------+--------------------+--------------------+
 
 Running the pipeline for a single model iteration five times makes 2000
 total API calls: 500 API calls to the Embedding Models and 1500 API
 calls to a generative LLM.
 
 #### RAG Retriever Optimization
+
+##### Hierarchy Optimization
+
+The RAG retriever pipeline performance was evaluated following every
+meaningful design change. Baseline testing indicated that splitting on
+headers Levels 1 through 4 resulted in overly-granular chunks, which was
+negatively impacting retriever performance. This was particularly
+prominent on procedural documents, where each step in the procedure was
+allocated to its own chunk. If a procedure had greater than k steps,
+where k is the number of relevant retrieved documents, the retriever is
+limited in the amount of context which can be returned. The image below
+displays one such case, which instructs how to purchase a parking
+permit. The procedure has 11 steps; however, querying the RAG knowledge
+base for "How do I purchase a parking permit?" with k=5, returned only 5
+of the 11 steps. The evaluated Context Precision is 0.0 and the Context
+Recall is 0.5.
+
+![Baseline Chunking Strategy: Fragmented Procedure
+Steps](Images/ParkingPermit_Baseline.png){fig-align="center"
+width="513"}
+
+Consequently, the chunking strategy was revised to split on levels 1 and
+2, better preserving context throughout procedural documents. This
+reduced the total number of upserted chunks from 5386 to 4091. This
+strategy also increased the retriever's average Context Recall
+performance by 7% on the testing dataset. Using the example above, the
+11 instructional steps are now split over two chunks, rather than 11
+chunks, allowing the retriever to return all steps in the procedure.
+This increased both Context Precision and Context Recall to 1.00. The
+image below shows a single context, capturing Steps #1 through #8 of the
+procedure.
+
+![H1/H2 Chunking Strategy: Single
+Chunk](Images/ParkingPermit_H1_H2.png){fig-align="center"}
+
+##### Text Chunk Filtering
+
+Analysis of the testing results following the chunking strategy revision
+revealed chunks which contained irrelevant or non-substantive text.
+These chunks were being returned by the retriever due to the relevance
+of the prepended metadata. Rule-based filtering was applied where there
+was little risk of excluding chunks with substantive content. Filtering
+was applied prior to prepending the metadata; all headers were stripped,
+leaving only the chunk's body. Chunks containing no body text, or those
+which contained only leftover structural content or placeholder text,
+were removed. This automated filtering removed 267 non-semantic chunks
+(\~ 6.5%) from the vector store. The breakdown can be seen below.
+
+| Filter:                      | Count: |
+|------------------------------|--------|
+| Empty Body                   | 192    |
+| FAQ Placeholder              | 47     |
+| Only Hyphens                 | 11     |
+| CMS Placeholders             | 11     |
+| Related Articles Placeholder | 6      |
+
+Further analysis of the retriever's behavior revealed that 'Overview'
+chunks were frequently returned by the retriever. Many UWF Public KB
+pages include a Level 1 "Overview" section. Due to the hierarchical
+splitting strategy, and content enrichment (e.g., Title, Path, etc.),
+the retriever was frequently returning these chunks with the highest
+relevancy score. While semantically relevant, they often lack the detail
+required to sufficiently answer a user's query. Consequently, these
+sections displace truly relevant information, reducing both Context
+Precision and Context Recall. However, it was determined that total
+exclusion of the "Overview" sections could eliminate semantically
+relevant results. As seen in the figure below, some "Overview" sections
+contain new or non-summary information, meaning that elimination should
+be assessed on a case-by-case basis.
+
+![Overview Section: Substantive vs.
+Stub](Images/Overview_Section_Comparison.png){fig-align="center"}
+
+The subjective nature of relevancy lends itself well to LLM usage;
+Claude Haiku 4.5 was utilized to determine the relevancy of these stubs,
+again balancing reasoning capability with cost and ensuring a different
+LLM family than RAG evaluation models. The LLM was only called for
+chunks matching specific patterns frequently found within the overview
+sections (e.g., "This page contains...", "Here you will find..."),
+reducing total upsertion cost. For a corpus containing 4091 chunks, the
+LLM was called only 79 times (\~ 1.93% of total chunks evaluated). The
+LLM prompt was tuned prior to vector store re-indexing, ensuring that
+the LLM's evaluation of relevancy aligned with human evaluation. The
+full prompt can be found below:
+
+![LLM Stub Filter
+Prompt](Images/LLM_Stub_Filter_Prompt.png){fig-align="center"}
+
+The following figures illustrate the difference in retrieval results
+before and after filtering and re-indexing. In the first figure, 3 of
+the 5 retrieved results are non-substantive "Overview" sections. Another
+retrieved result is occupied by a leftover FAQ placeholder from the
+scraped Confluence KB. Only one of the retrieved results contribute
+substantive information, though it is not relevant to the question.
+
+![Pre-Filter Retrieval
+Results](Images/H1_H2_Overview_Section.png){fig-align="center"}
+
+The filter below demonstrates the retrieved results once the knowledge
+base was re-indexed with filtered chunks. The returned chunks are both
+more granular and more relevant to the question at hand.
+
+![Post-Filter Retrieval
+Results](Images/Stub_Filtering_Comparison_Study_ABroad.png){fig-align="center"}
 
 #### RAG Generation Testing
 
@@ -484,6 +600,14 @@ calls to a generative LLM.
 ### Data Exploration and Visualization
 
 #### RAG Knowledge Base Dataset
+
+Number of documents: 788
+
+| Strategy                  | Number of Chunks: |
+|---------------------------|-------------------|
+| Baseline                  | 5386              |
+| H1/H2                     | 4091              |
+| H1/H2 with Stub Filtering | 3764              |
 
 #### Performance Evaluation Dataset
 
@@ -496,29 +620,46 @@ randomized.
 For each dataset, all available documents were loaded and filtered for a
 minimum length to ensure enough content for question generation. 50
 documents were randomly sampled without replacement, using Python's
-Random library. Claude Haiku 4.5 was used to generate a single
-natural-language QA pair per document. Limiting content generation per
-document ensures broad topical coverage of the corpus and prevents from
-over-indexing a single document.
+Random library. Claude Haiku 4.5 was used to generate a single natural
+language QA pair per document. Limiting content generation per document
+ensures broad topical coverage of the corpus and prevents over-indexing
+a single document. The figure below shows the prompt used to generate
+the question and ground truth pairs.
+
+![LLM Prompt: Question / Ground Truth
+Generation](Images/Question_GroundTruth_Prompt.png){fig-align="center"
+width="568"}
 
 The Anthropic Claude family was explicitly chosen as it belongs to a
 different LLM family than the Ragas LLM (OpenAI GPT), limiting bias
 between QA generation and performance evaluation. Haiku 4.5 was chosen
 from Anthropic's available Claude models, as it has similar reasoning
-capabilities to Sonnet-4 but is much cheaper. The QA-pairs were
-aggregated and exported to a .CSV file, ready for use within the
+capabilities to Sonnet-4 but is much cheaper. The QA pairs were
+aggregated and exported to a .csv file, ready for use within the
 performance evaluation pipeline. This process was then repeated two more
-times to generate the datasets.
+times to generate the datasets. An example of a generated question and
+ground truth pair can be seen below.
 
-**Maybe insert QA example?? Include Claude Prompt??**
+![Generated Question / Ground Truth
+Pair](Images/QA_Example.png){fig-align="center"}
 
 ### RAG Pipeline Performance Analysis
 
-| Pipeline Design Iteration | Average Context Recall | Average Context Precision |
-|:-------------------------:|:----------------------:|:-------------------------:|
-|         Baseline          |      0.78 ± 0.00       |        0.78 ± 0.01        |
-|                           |                        |                           |
-|                           |                        |                           |
+The following table reports the results on the first batch of the
+testing datasets:
+
++-----------------------+--------------------+-----------------------+
+| Pipeline Design       | Average Context    | Average Context       |
+| Iteration             | Recall             | Precision             |
++:=====================:+:==================:+:=====================:+
+| Baseline              | 0.78 ± 0.00        | 0.74 ± 0.01           |
++-----------------------+--------------------+-----------------------+
+| H1/H2 Chunking        | 0.85 ± 0.00        | 0.74 ± 0.01           |
+| Strategy              |                    |                       |
++-----------------------+--------------------+-----------------------+
+| H1/H2 + Stub          | 0.89 ± 0.00        | 0.77 ± 0.01           |
+| Filtering             |                    |                       |
++-----------------------+--------------------+-----------------------+
 
 ### Conclusion
 
