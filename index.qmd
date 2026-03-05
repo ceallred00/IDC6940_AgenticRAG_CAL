@@ -126,21 +126,24 @@ RAG systems, including standard sparse indexing, sparse encoder-based
 vector models, and dense indexing. Standard sparse indexing,
 colloquially known as keyword-matching, assigns relevance based upon how
 many times a keyword appears in a document relative to the entire
-collection. Sparse-encoder based indexes improve upon traditional sparse
-indexing by enhancing the vocabulary with semantically similar words,
-improving the precision of keyword-matches. Finally, dense indexes
-compare the vectorized form of the user’s query to a collection of
-vectorized documents, selecting the top-K documents using cosine
-similarity. This method is efficient for capturing context. Benchmarking
-using the NDCG\@10 metric, the authors demonstrated that semantic-based
-hybrid methods consistently outperform both state-of-the-art baselines
-and keyword-based hybrid methods. The Sparse Encoder-based semantic
-search, when combined with the 'Best Fields' query, demonstrated
-superior performance, even when compared to RAG pipelines specifically
-fine-tuned for those datasets. These findings are particularly relevant
-in an academic advising context, where users' queries may require
-contextual understanding, benefiting from dense embeddings, or be better
-suited by exact keyword-matching, benefiting from sparse embeddings.
+collection. Sparse-encoder based indexes improve upon this by assigning
+relevancy based upon learned contextual importance, utilizing an
+underlying neural network. Some models, including the ELSER model used
+by @BlendedRAG, enhance the document or query with semantically similar
+words prior to vectorization, improving the precision of
+keyword-matches. Finally, dense indexes compare the vectorized form of
+the user’s query to a collection of vectorized documents, selecting the
+top-K documents using cosine similarity. This method is efficient for
+capturing context. Benchmarking using the NDCG\@10 metric, the authors
+demonstrated that semantic-based hybrid methods consistently outperform
+both state-of-the-art baselines and keyword-based hybrid methods. The
+Sparse Encoder-based semantic search, when combined with the 'Best
+Fields' query, demonstrated superior performance, even when compared to
+RAG pipelines specifically fine-tuned for those datasets. These findings
+are particularly relevant in an academic advising context, where users'
+queries may require contextual understanding, benefiting from dense
+embeddings, or be better suited by exact keyword-matching, benefiting
+from sparse embeddings.
 
 Following retrieval, Advanced RAG also implements post-retrieval
 optimization techniques, which refine the context prior to generation.
@@ -312,35 +315,122 @@ techniques provides the optimal performance in an academic environment.
 
 ------------------------------------------------------------------------
 
-## Methods
+## Methodology
 
--   Detail the models or algorithms used.
+A robust retrieval-augmented generation system is composed of the
+following components: user interface, knowledge base, retriever, and
+generator. In this study, the user interfaces with the RAG system via a
+command-line interface (CLI) AI agent. The knowledge base is a Pinecone
+hybrid index, which retrieves contextually relevant results using the
+dot product similarity metric. These retrieved contexts are then passed
+to the generation LLM, which processes the information and generates a
+response. The response is returned to the user through the agentic
+interface. @fig-something illustrates the user's end-to-end workflow.
 
--   Justify your choices based on the problem and data.
+The following methodology sections detail the system's implementation,
+including design decisions, relevant libraries, API calls, and system
+improvements.
 
 ### Knowledge Base Development
 
 The RAG pipeline's knowledge base is composed of content from the
-University of West Florida's Public Knowledge Base and the Department of
-Mathematics and Statistics' 2024-2025 Graduate Student Handbook. More
-information about the sourced data, including the raw data ingestion and
-data pre-processing methods applied, can be found in the [Data
-Exploration and Visualization] section. Once ingested, both document
-sources utilized the same chunking and indexing strategies detailed
-below.
+University of West Florida's Public Knowledge Base and the UWF
+Department of Mathematics and Statistics' 2024-2025 Graduate Student
+Handbook.
+
+#### Data Ingestion Process
+
+The University of West Florida's Public Knowledge Base was scraped from
+the public Confluence Tree, whereas the Department of Mathematics and
+Statistics' 2024-2025 Graduate Student Handbook was ingested as a PDF
+file. Both data sources were converted to Markdown files; however, the
+ingestion and pre-processing methods differ heavily between the two
+sources.
+
+##### Confluence URL Tree to Markdown Conversion:
+
+The UWF Public Knowledge Base hosts information relevant to students,
+faculty, and staff, covering topics such as course registration,
+academic advising, study abroad programs, and available software
+resources.
+
+The content was scraped programmatically using the
+`Confluence REST API`, starting at the root page and traversing the tree
+using a depth-first search algorithm. Each page's immediate children
+were obtained by calling the `/rest/api/content/{id}/child/page`
+endpoint, where `id` is the Confluence Page ID. The recursion continues
+until a leaf node is reached, beginning the page processing.
+
+Each page's content is retrieved using an HTTP GET request, using the
+`expand=body.storage,version` parameter. The `body.storage` field
+returns Confluence's internal XML storage format, rather than the
+rendered HTML. Rendered HTML is much more difficult to clean, as it
+includes display HTML unrelated to the page's content. Confluence's XML
+is heavily structured, increasing the ease with which the content can be
+parsed and cleansed. The `version` field provides additional metadata
+about the page, including the version number and last-modified
+timestamp. The payload also contains key metadata, including the
+Confluence ID and page title, which are extracted.
+
+The `BeautifulSoup` Python library, with the `lxml` parser, was used to
+parse the storage-format XML into a simplified tree structure.
+Confluence macro components (e.g., \<ac:parameter\>), table-of-contents
+macros, images, and empty paragraphs were removed; text was unwrapped
+from layout wrapper tags (e.g., \<ac:layout\>). These elements are not
+relevant to the page's content. Without removal, they act as noise,
+reducing RAG pipeline performance and inflating embedding, storage, and
+retrieval costs. Internal Confluence links were maintained, utilizing
+`quote_plus` to encode the URLs, and replacing the XML tags with
+standard HTML anchor tags. While internal links are not traversed, the
+URLs are kept as content. This allows the RAG generation module to
+process and return them to the user for more information. Finally, the
+cleansed HTML is converted by the `Markdownify` library into clean
+Markdown.
+
+Each page's ancestors are tracked throughout the recursion process. The
+relevant metadata and ancestor chain are prepended to the cleaned
+Markdown content as YAML frontmatter, and the Markdown file is saved to
+the disk. @fig-confluence-md-file illustrates the final cleaned Markdown
+file. The content has been truncated for illustration purposes.
+
+![Truncated Confluence Page Markdown
+File](Images/Confluence_Page_MD_File.png){#fig-confluence-md-file
+fig-align="center"}
+
+##### PDF to Markdown Conversion:
+
+The UWF Department of Mathematics and Statistics' 2024-2025 Graduate
+Student Handbook includes information related to the MS in Mathematical
+Sciences, MS in Data Science, and adjoining certificate programs.
+Information includes program requirements, available courses, course
+schedules, and faculty profiles.
+
+The PDF document was converted to Markdown using LangChain's
+`DoclingLoader` class. By specifying the
+`export_type=ExportType.MARKDOWN` parameter, the PDF file was parsed and
+converted to Markdown content in a single API call. The `DoclingLoader`
+document loader returns one Document per page of the PDF. The returned
+Documents are joined and saved as a Markdown file. YAML frontmatter is
+not appended. Any necessary metadata is attached within the text
+chunking process.
+
+More information about the sourced data can be found in the [Data
+Exploration and Visualization] section. Once ingested and converted to
+Markdown files, both document sources utilized the same chunking and
+indexing strategies detailed below.
 
 #### Chunking Strategy
 
 The corpus utilizes a hierarchical-recursive chunking strategy. Each
-page was split on headers, using LangChain's MarkdownHeaderTextSplitter
-method. While initial iterations split on Levels 1 through 4 headers,
-the strategy was refined to split on Level 1 through 2 headers following
-baseline testing, preventing overly-granular chunks. Headers were
-retained within each chunk's content, rather than stripped. This retains
-critical labels which add semantic context, increasing the likelihood of
-retrieval.
+page was split on headers, using LangChain's
+`MarkdownHeaderTextSplitter` method. While initial iterations split on
+Levels 1 through 4 headers, the strategy was refined to split on Level 1
+through 2 headers following baseline testing, preventing overly-granular
+chunks. Headers were retained within each chunk's content, rather than
+stripped. This retains critical labels which add semantic context,
+increasing the likelihood of retrieval.
 
-Then, LangChain's RecursiveCharacterTextSplitter method was used to
+Then, LangChain's `RecursiveCharacterTextSplitter` method was used to
 split each chunk recursively, with a 2000-character limit and a
 400-character (20%) sliding window overlap. This ensures each chunk has
 adequate context, without obscuring specific details which may be needed
@@ -382,12 +472,15 @@ Vector stores support three different indexing strategies: dense,
 sparse, and hybrid. This knowledge base utilizes a hybrid index, as
 recommended by @gao2024rag and empirically supported by @BlendedRAG. The
 hybrid index is composed of dense vectors, which capture semantic and
-contextual information, and sparse-encoded vectors, which utilize a
-semantically-expanded vocabulary to improve upon exact keyword matching
-[@BlendedRAG]. All vectors are stored in a unified index structure,
-meaning a single retrieval may return results which are both
-contextually relevant and precise. The document embedding process can be
-viewed in @fig-doc-embedding-generation-process.
+contextual information, and sparse-encoded vectors. It should be noted
+that the chosen sparse-encoder model (pinecone-sparse-english-v0) does
+not expand the document or query with semantically-relevant words,
+maintaining quick upsertion speed. The model does, however, utilize an
+underlying transformer to assign relevancy based upon contextual
+importance. All vectors are stored in a unified index structure, meaning
+a single retrieval may return results which are both contextually
+relevant and precise. The document embedding process can be viewed in
+@fig-doc-embedding-generation-process.
 
 ![Document Embedding Generation
 Process](Images/Embedding_Generation.png){#fig-doc-embedding-generation-process
@@ -395,46 +488,56 @@ fig-align="center"}
 
 #### Embedding Process
 
-The gemini-embeddings-001 model was selected to generate dense
+The `gemini-embeddings-001` model was selected to generate dense
 embeddings. At the time of selection, the model ranked high on the MTEB
 Leaderboard [@mteb_leaderboard]. Additionally, the model integrates
-natively with the LangChain framework. The model uses the Matryoshka
+natively with the `LangChain` framework. The model uses the Matryoshka
 Representation Learning (MRL) technique to truncate output vectors
 without significant loss of information, as demonstrated by the MTEB
 scores (68.16 for 2048-dim vs. 67.99 for 768-dim)
 [@google_gemini_embeddings]. Consequently, the densely embedded vectors
 generated for the UWF knowledge base have a dimensionality of 768,
-balancing storage frugality with precision.
+balancing storage frugality with precision. Chunks were embedded in
+batch sizes of 100, adhering to Gemini's API limit. Each batch upload
+was buffered by a 0.5-second sleep to avoid becoming rate limited.
 
-The pinecone-sparse-english-v0 model was utilized to generate
-semantically-enhanced sparse vectors. The model outputs a
+The `pinecone-sparse-english-v0` model was utilized to generate
+semantically enhanced sparse vectors. The model outputs a
 SparseEmbedding object consisting of indices and values. The indices map
 to specific entries in the model's vocabulary, while the values
 represent the learned importance of those terms relative to the
-document's meaning [@pinecone_sparse_docs].
+document's meaning [@pinecone_sparse_docs]. The number of non-zero
+elements in the returned vector roughly corresponds to the number of
+meaningful words contained within the text chunk. Chunks were embedded
+in batch sizes of 96, adhering to Pinecone's API limit. Each embedding
+batch was buffered by a 12-second sleep to avoid hitting Pinecone's
+separate 250,000 token per minute rate limit. The extended sleep allows
+5 batches to be processed per minute. While this is significantly slower
+than the Gemini embedding process, it helps to avoid becoming rate
+limited by Pinecone.
 
 To optimize retrieval performance, the dense and sparse models are
 instantiated with task-specific embedding instructions. This was
-implemented via the RETRIEVAL_DOCUMENT/RETRIEVAL_QUERY parameter for
-Gemini and the passage/query parameter for Pinecone
+implemented via the `RETRIEVAL_DOCUMENT`/`RETRIEVAL_QUERY` parameter for
+Gemini and the `passage`/`query` parameter for Pinecone
 [@pinecone2025sparse_release; @google_gemini_embeddings]. These
-parameters allow the respective model to differentiate between
+parameters allow the respective models to differentiate between
 generating document chunk embeddings (during the upsertion process) and
 generating user query embeddings (during the retrieval process).
 
 Prior to upsertion, the vectors were normalized via Euclidean
-normalization, using Python's NumPy library. The sparse values are much
-larger than the dense values. Without normalization, the sparse vectors
-would have a much larger magnitude than the dense vectors. This would
-unintentionally cause the retriever to prioritize exact keyword matching
-over semantically-relevant results during the hybrid search process.
-Euclidean normalization reduces each vector's magnitude to 1.0,
-maintaining equal weight.
+normalization using Python's `NumPy` library. As demonstrated in
+@fig-vector-generation raw sparse values are much larger than dense
+values. Without normalization, the sparse vector has a magnitude of
+14.55, approximately 25 times larger than the magnitude of the dense
+embedding. This difference in magnitude would unintentionally cause the
+retriever to prioritize exact keyword matching over semantically
+relevant results during the hybrid search process. Euclidean
+normalization scales the magnitude of all vectors to 1.0, maintaining an
+equal weight during the similarity comparison.
 
-**Insert vector generation pipeline image here. Illustrates different in
-magnitude for the same context.**
-
-**Insert batching details**
+![Generated Vectors: Comparison of Magnitude Before and After Euclidean
+Normalization](Images/Vector_Generation.png){#fig-vector-generation}
 
 #### Vector Upsertion and Index Management
 
@@ -474,7 +577,34 @@ record; thus, the vectors were upserted in batch sizes of 50, ensuring
 compliance with the API's 2 MB request body limit
 [@pinecone_upsert_batches].
 
-#### RAG Pipeline
+#### Query Processing and Embedding
+
+The retrieval process begins by transforming the user's natural language
+query into vector representations. The RAG pipeline utilizes the same
+embedding models used during ingestion, ensuring alignment between the
+query vectors and the document vectors. The dense
+`gemini-embeddings-001` model's `task_type` parameter was set to
+`RETRIEVAL_QUERY`, which optimizes the resulting vector for finding
+semantic matches, rather than representing document content. The sparse
+`pinecone-sparse-english-v0` model was initialized with
+`input_type="query"`. This optimizes the vector for short, interrogative
+inputs rather than longer passages. Both embedding types are normalized
+using the same Euclidean Normalization algorithm as the document base.
+
+##### Hybrid Search and Scoring
+
+Once the query vectors are generated, Pinecone's query API is called on
+the knowledge base index, passing the normalized dense and sparse
+embeddings. No additional weighting is applied, ensuring no partiality
+is placed on semantic or exact-keyword results. The `top_k` parameter
+determines the number of results returned by the Pinecone API. The
+hybrid index calculates relevancy scores for both vector types
+simultaneously. This differs from traditional hybrid architectures,
+which require separate dense and sparse indexes. The final relevance
+score for a query and document is computed, and the top k results are
+returned.
+
+#### Generation
 
 ### RAG Pipeline Performance Testing and Optimization
 
@@ -497,7 +627,7 @@ performed on three 50-question, independent datasets, withholding one
 50-question dataset for final testing. The other two datasets were used
 for pipeline optimization.
 
-The Ragas Python library was used to evaluate the retriever's
+The `Ragas` Python library was used to evaluate the retriever's
 performance, using two critical metrics: Context Precision and Context
 Recall [@ragas_api_reference]. Both methods implement LLM-as-a-judge;
 OpenAI's gpt-4o model was utilized, balancing high reasoning
@@ -545,14 +675,14 @@ then repeated five times per RAG pipeline design, documenting cross-run
 metrics (average and standard deviation) for comparison.
 
 ![RAG Retrieval Evaluation
-Pipeline](Images/RAG Retriever Eval Pipeline (1).png){#fig-RAG-Retrieval-Eval-Pipeline
+Pipeline](Images/RAG%20Retriever%20Eval%20Pipeline%20(1).png){#fig-RAG-Retrieval-Eval-Pipeline
 fig-align="center"}
 
-The pipeline utilizes Ragas v0.4 Collections API and the asyncio Python
-library to perform asynchronous Ragas metric computation. Though the
-pipeline makes k API calls per question to compute Context Precision,
-the calls are performed nearly simultaneously, significantly reducing
-the time it takes to execute the pipeline. Because both Context
+The pipeline utilizes Ragas v0.4 Collections API and the `asyncio`
+Python library to perform asynchronous Ragas metric computation. Though
+the pipeline makes k API calls per question to compute Context
+Precision, the calls are performed nearly simultaneously, significantly
+reducing the time it takes to execute the pipeline. Because both Context
 Precision and Context Recall utilize LLM-as-a-judge, repeating the
 pipeline over a specific number of iterations is important for ensuring
 that the results are consistent and repeatable.
@@ -561,29 +691,30 @@ The testing process is computationally intensive. Testing a dataset of
 50 questions, retrieving k=5 results per question, requires 400 total
 API calls:
 
-+-------------------+-------------------+-------------------+
-| Number of API     | Model:            | Purpose:          |
-| Calls:            |                   |                   |
-+:=================:+:=================:+:=================:+
-| 50                | pinecone          | Generate Sparse   |
-|                   | -                 | Embeddings        |
-|                   | sparse-english-v0 |                   |
-+-------------------+-------------------+-------------------+
-| 50                | gem               | Generate Dense    |
-|                   | i                 | Embeddings        |
-|                   | ni-embeddings-001 |                   |
-+-------------------+-------------------+-------------------+
-| 250               | gpt-4o            | Compute Context   |
-|                   |                   | Precision -\      |
-|                   |                   | k calls per       |
-|                   |                   | question          |
-+-------------------+-------------------+-------------------+
-| 50                | gpt-4o            | Compute Context   |
-|                   |                   | Recall -          |
-|                   |                   |                   |
-|                   |                   | 1 call per        |
-|                   |                   | question          |
-+-------------------+-------------------+-------------------+
++------------------+------------------+------------------+
+| Number of API    | Model:           | Purpose:         |
+| Calls:           |                  |                  |
++:================:+:================:+:================:+
+| 50               | ## pinecone      | Generate Sparse  |
+|                  |                  | Embeddings       |
+|                  | s                |                  |
+|                  | parse-english-v0 |                  |
++------------------+------------------+------------------+
+| 50               | gem i            | Generate Dense   |
+|                  | n                | Embeddings       |
+|                  | i-embeddings-001 |                  |
++------------------+------------------+------------------+
+| 250              | gpt-4o           | Compute Context  |
+|                  |                  | Precision -\     |
+|                  |                  | k calls per      |
+|                  |                  | question         |
++------------------+------------------+------------------+
+| 50               | gpt-4o           | Compute Context  |
+|                  |                  | Recall -         |
+|                  |                  |                  |
+|                  |                  | 1 call per       |
+|                  |                  | question         |
++------------------+------------------+------------------+
 
 : API Call Breakdown. {#tbl-API-Call-Breakdown}
 
@@ -642,19 +773,19 @@ were removed. This automated filtering removed 267 non-semantic chunks
 (\~ 6.5%) from the vector store. The breakdown can be seen in
 @tbl-chunk-filtering below.
 
-+---------------------------------------+----------------------------+
-| Filter:                               | Count:                     |
-+=======================================+============================+
-| Empty Body                            | 192                        |
-+---------------------------------------+----------------------------+
-| FAQ Placeholder                       | 47                         |
-+---------------------------------------+----------------------------+
-| Only Hyphens                          | 11                         |
-+---------------------------------------+----------------------------+
-| CMS Placeholders                      | 11                         |
-+---------------------------------------+----------------------------+
-| Related Articles Placeholder          | 6                          |
-+---------------------------------------+----------------------------+
++--------------------------------------+---------------------------+
+| Filter:                              | Count:                    |
++======================================+===========================+
+| Empty Body                           | 192                       |
++--------------------------------------+---------------------------+
+| FAQ Placeholder                      | 47                        |
++--------------------------------------+---------------------------+
+| Only Hyphens                         | 11                        |
++--------------------------------------+---------------------------+
+| CMS Placeholders                     | 11                        |
++--------------------------------------+---------------------------+
+| Related Articles Placeholder         | 6                         |
++--------------------------------------+---------------------------+
 
 : Rule-Based Filtering. {#tbl-chunk-filtering}
 
@@ -743,7 +874,7 @@ randomized.
 For each dataset, all available documents were loaded and filtered for a
 minimum length to ensure enough content for question generation. 50
 documents were randomly sampled without replacement, using Python's
-Random library. Claude Haiku 4.5 was used to generate a single natural
+`random` module. Claude Haiku 4.5 was used to generate a single natural
 language QA pair per document. Limiting content generation per document
 ensures broad topical coverage of the corpus and prevents over-indexing
 a single document. @fig-LLM-QA-Generation below shows the prompt used to
@@ -771,18 +902,18 @@ Pair](Images/QA_Example.png){#fig-QA-Generation fig-align="center"}
 @tbl-dataset1-testing-res reports the results on the first batch of the
 testing datasets:
 
-+----------------------+-------------------+----------------------+
-| Pipeline Design      | Average Context   | Average Context      |
-| Iteration            | Recall            | Precision            |
-+:====================:+:=================:+:====================:+
-| Baseline             | 0.78 ± 0.00       | 0.74 ± 0.01          |
-+----------------------+-------------------+----------------------+
-| H1/H2 Chunking       | 0.85 ± 0.00       | 0.74 ± 0.01          |
-| Strategy             |                   |                      |
-+----------------------+-------------------+----------------------+
-| H1/H2 + Stub         | 0.89 ± 0.00       | 0.77 ± 0.01          |
-| Filtering            |                   |                      |
-+----------------------+-------------------+----------------------+
++---------------------+------------------+---------------------+
+| Pipeline Design     | Average Context  | Average Context     |
+| Iteration           | Recall           | Precision           |
++:===================:+:================:+:===================:+
+| Baseline            | 0.78 ± 0.00      | 0.74 ± 0.01         |
++---------------------+------------------+---------------------+
+| H1/H2 Chunking      | 0.85 ± 0.00      | 0.74 ± 0.01         |
+| Strategy            |                  |                     |
++---------------------+------------------+---------------------+
+| H1/H2 + Stub        | 0.89 ± 0.00      | 0.77 ± 0.01         |
+| Filtering           |                  |                     |
++---------------------+------------------+---------------------+
 
 : Testing Results - Generated Dataset #1. {#tbl-dataset1-testing-res}
 
