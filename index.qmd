@@ -691,30 +691,22 @@ The testing process is computationally intensive. Testing a dataset of
 50 questions, retrieving k=5 results per question, requires 400 total
 API calls:
 
-+------------------+------------------+------------------+
-| Number of API    | Model:           | Purpose:         |
-| Calls:           |                  |                  |
-+:================:+:================:+:================:+
-| 50               | ## pinecone      | Generate Sparse  |
-|                  |                  | Embeddings       |
-|                  | s                |                  |
-|                  | parse-english-v0 |                  |
-+------------------+------------------+------------------+
-| 50               | gem i            | Generate Dense   |
-|                  | n                | Embeddings       |
-|                  | i-embeddings-001 |                  |
-+------------------+------------------+------------------+
-| 250              | gpt-4o           | Compute Context  |
-|                  |                  | Precision -\     |
-|                  |                  | k calls per      |
-|                  |                  | question         |
-+------------------+------------------+------------------+
-| 50               | gpt-4o           | Compute Context  |
-|                  |                  | Recall -         |
-|                  |                  |                  |
-|                  |                  | 1 call per       |
-|                  |                  | question         |
-+------------------+------------------+------------------+
++----------------------+--------------------------+------------------------------+
+| Number of API Calls: | Model:                   | Purpose:                     |
++:====================:+:========================:+:============================:+
+| 50                   | ## pinecone              | Generate Sparse Embeddings   |
+|                      |                          |                              |
+|                      | s parse-english-v0       |                              |
++----------------------+--------------------------+------------------------------+
+| 50                   | gem i n i-embeddings-001 | Generate Dense Embeddings    |
++----------------------+--------------------------+------------------------------+
+| 250                  | gpt-4o                   | Compute Context Precision -\ |
+|                      |                          | k calls per question         |
++----------------------+--------------------------+------------------------------+
+| 50                   | gpt-4o                   | Compute Context Recall -     |
+|                      |                          |                              |
+|                      |                          | 1 call per question          |
++----------------------+--------------------------+------------------------------+
 
 : API Call Breakdown. {#tbl-API-Call-Breakdown}
 
@@ -773,19 +765,13 @@ were removed. This automated filtering removed 267 non-semantic chunks
 (\~ 6.5%) from the vector store. The breakdown can be seen in
 @tbl-chunk-filtering below.
 
-+--------------------------------------+---------------------------+
-| Filter:                              | Count:                    |
-+======================================+===========================+
-| Empty Body                           | 192                       |
-+--------------------------------------+---------------------------+
-| FAQ Placeholder                      | 47                        |
-+--------------------------------------+---------------------------+
-| Only Hyphens                         | 11                        |
-+--------------------------------------+---------------------------+
-| CMS Placeholders                     | 11                        |
-+--------------------------------------+---------------------------+
-| Related Articles Placeholder         | 6                         |
-+--------------------------------------+---------------------------+
+| Filter:                      | Count: |
+|------------------------------|--------|
+| Empty Body                   | 192    |
+| FAQ Placeholder              | 47     |
+| Only Hyphens                 | 11     |
+| CMS Placeholders             | 11     |
+| Related Articles Placeholder | 6      |
 
 : Rule-Based Filtering. {#tbl-chunk-filtering}
 
@@ -902,18 +888,11 @@ Pair](Images/QA_Example.png){#fig-QA-Generation fig-align="center"}
 @tbl-dataset1-testing-res reports the results on the first batch of the
 testing datasets:
 
-+---------------------+------------------+---------------------+
-| Pipeline Design     | Average Context  | Average Context     |
-| Iteration           | Recall           | Precision           |
-+:===================:+:================:+:===================:+
-| Baseline            | 0.78 ± 0.00      | 0.74 ± 0.01         |
-+---------------------+------------------+---------------------+
-| H1/H2 Chunking      | 0.85 ± 0.00      | 0.74 ± 0.01         |
-| Strategy            |                  |                     |
-+---------------------+------------------+---------------------+
-| H1/H2 + Stub        | 0.89 ± 0.00      | 0.77 ± 0.01         |
-| Filtering           |                  |                     |
-+---------------------+------------------+---------------------+
+| Pipeline Design Iteration | Average Context Recall | Average Context Precision |
+|:-------------------------:|:----------------------:|:-------------------------:|
+|         Baseline          |      0.78 ± 0.00       |        0.74 ± 0.01        |
+|  H1/H2 Chunking Strategy  |      0.85 ± 0.00       |        0.74 ± 0.01        |
+|  H1/H2 + Stub Filtering   |      0.89 ± 0.00       |        0.77 ± 0.01        |
 
 : Testing Results - Generated Dataset #1. {#tbl-dataset1-testing-res}
 
