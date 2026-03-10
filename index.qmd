@@ -1,5 +1,5 @@
 ---
-title: "Optimizing Agentic Retrieval-Augmented Generation: An Analysis of Single vs. Multi-Agent Workflows"
+title: "Enhancing Agentic RAG: Optimizing Hybrid Retrieval for an Autonomous Academic Advising Agent"
 author: "Cheyanne Allred-Lopez (Advisor: Dr. Cohen)"
 date: '`r Sys.Date()`'
 format:
@@ -35,57 +35,55 @@ and degree requirements online, students may wish to verify the
 applicability of the information to their specific academic situation.
 
 While chatbots have long existed to help serve customers' requests,
-their performance has been limited by reliance on static information,
-the inability to synthesize information across many sources or apply
-context-specific reasoning, as well as the inability to generate natural
-responses. Recent advancements in large language models, including the
-ability to dynamically access and synthesize information across multiple
-sources, understand context and autonomously adjust behavior, and
-generate conversational responses, present an opportunity to develop an
-intelligent academic advising assistant. This assistant could augment
-existing advisers by responding to routine questions and providing
-personalized guidance, consequently allowing advisers to focus on
-higher-complexity requests.
+their performance has been limited by reliance on static information, an
+inability to synthesize information across many sources, a lack of
+context-specific reasoning, and the inability to generate natural
+responses. Recent advancements in large language models (LLMs),
+including the ability to dynamically access and synthesize information
+across multiple sources, understand context, autonomously adjust
+behavior, and generate conversational responses, present an opportunity
+to develop an intelligent academic advising assistant. This assistant
+could augment existing advisers by responding to routine questions and
+providing personalized guidance, consequently allowing human advisers to
+focus on higher-complexity requests.
 
-Off-the-shelf large language models have increasingly large parametric
-knowledge bases, though their knowledge is limited to that which they
-have been exposed to during training. The models do not have access to
-any information published after their training cutoff date. Despite
-this, models may attempt to answer a question about information that
-they were not trained upon, resulting in hallucinated responses.
-Furthermore, generated responses do not have source information, leaving
-users unable to verify the accuracy of responses. These limitations are
-unacceptable in an academic setting. Academic policies, degree
-requirements, and program offerings change regularly. An intelligent
-advising assistant must be able to access the most up-to-date
-information at all times, providing grounded, verifiable responses with
-clear citations.
+Off-the-shelf LLMs have increasingly large parametric knowledge bases,
+though their knowledge is strictly limited to the data they were exposed
+to during training. These models do not have access to any information
+published after their training cutoff date. Despite this, models may
+attempt to answer a question about information that they were not
+trained upon, resulting in hallucinated responses. Furthermore,
+generated responses do not have source information, leaving users unable
+to verify the accuracy of responses. These limitations are unacceptable
+in an academic setting. Academic policies, degree requirements, and
+program offerings change regularly. An intelligent advising assistant
+must be able to access the most up-to-date information at all times,
+providing grounded, verifiable responses with clear citations.
 
 Retrieval-augmented generation (RAG) addresses these limitations by
 enabling access to non-parametric knowledge, or information retrieved
-from external information stores at the time of the user's query rather
+from external knowledge stores at the time of the user's query rather
 than from within the model's parametric knowledge [@lewis2020retrieval].
-This expands the model's memory and reduces hallucinations. The process
-is as follows: The pre-trained retrieval model encodes the user's query
-and uses Maximum Inner Product Search (MIPS) to identify the top-K most
-relevant documents from the document index. The pre-trained generation
-model then crafts its response based on both the user's original query
-and the retrieved documents. This architecture overcomes the
-knowledge-cutoff date problem present in large language models. The
-model's non-parametric knowledge can be updated simply by encoding and
-upserting the updated information to the document index. This is a more
-practical option, as it is computationally less expensive, less
-time-consuming, and less technically complex than retraining the
-generation model.
+This expands the model's memory and significantly reduces
+hallucinations. The process is as follows: A pre-trained retrieval model
+encodes the user's query and uses Maximum Inner Product Search (MIPS) to
+identify the top-K most relevant documents from the document index. The
+pre-trained generation model then crafts its response based on both the
+user's original query and the retrieved documents. This architecture
+overcomes the knowledge-cutoff date problem present in LLMs. The model's
+non-parametric knowledge can be updated simply by encoding and upserting
+the updated information to the document index. This is a more practical
+option, as it is computationally less expensive, less time-consuming,
+and less technically complex than retraining the generation model.
 
 It is also a more effective architecture, as @lewis2020retrieval prove
 that the RAG architecture outperforms state-of-the-art models on
 knowledge-intensive tasks and increases overall RAG pipeline performance
 by supplementing the generation model's parametric knowledge.
-Additionally, this architecture provides transparency in terms of
-information sources. Whereas parametric knowledge is stored within the
-model's training weights, information obtained using a retriever has a
-citation, improving the verifiability of responses.
+Additionally, this architecture provides transparency. Whereas
+parametric knowledge is stored within the model's training weights,
+information obtained using a retriever can be directly cited, improving
+the verifiability of responses.
 
 Since 2020, the RAG architecture has evolved significantly. @gao2024rag
 systematically reviewed over 100 RAG-related studies, identifying three
@@ -115,9 +113,9 @@ information. The authors' comprehensive review identifies multiple
 embedding optimization techniques, including hybrid indexing and
 embedding model fine-tuning. Fine-tuning a model can be computationally
 expensive and technically rigorous, limiting its applicability. Hybrid
-indexes, however, are a more accessible alternative, utilizing sparse
-and dense vector representations to capture both contextual information
-and exact keyword matching.
+indexes, however, are a more accessible alternative, utilizing both
+sparse and dense vector representations to capture both exact keyword
+matching and contextual meaning, respectively.
 
 @BlendedRAG provide empirical evidence of hybrid indexes' superior
 performance when compared to state-of-the-art models. The authors
@@ -140,180 +138,104 @@ both state-of-the-art baselines and keyword-based hybrid methods. The
 Sparse Encoder-based semantic search, when combined with the 'Best
 Fields' query, demonstrated superior performance, even when compared to
 RAG pipelines specifically fine-tuned for those datasets. These findings
-are particularly relevant in an academic advising context, where users'
-queries may require contextual understanding, benefiting from dense
-embeddings, or be better suited by exact keyword-matching, benefiting
-from sparse embeddings.
-
-Following retrieval, Advanced RAG also implements post-retrieval
-optimization techniques, which refine the context prior to generation.
-In the generation process, the LLM synthesizes the retrieved results
-into an answer which is returned to the user. @gao2024rag highlight that
-it is generally not a good idea to return the results as-is and
-recommend curating the context before returning the information to the
-user. This may involve re-ranking outputs to ensure that the most
-relevant answer is provided first. Another post-retrieval technique
-involves using an LLM to evaluate the content prior to returning an
-answer to the user.
+are particularly relevant in an academic advising context, where a
+user's query may require contextual understanding (benefiting from dense
+embeddings) or exact keyword matching (benefiting from sparse
+embeddings).
 
 @gao2024rag identify that robust RAG systems should be able to reject
-documents which are contextually-relevant but do not contribute
-substantive information. They should refrain from generating an answer
-when the returned results are not useful, thus minimizing
-hallucinations. RAG systems should also be able to synthesize
-information across multiple documents and identify known inaccuracies.
-To ensure systems possess these capabilities, @gao2024rag emphasize that
-RAG systems inherently have two objectives, retrieval and generation,
-which should be evaluated separately. The retrieved results should be
-evaluated for precision and recall, while the generated text should be
-evaluated against the context of what was returned (faithfulness) and
-its relevancy to the initial query. This enables optimization of
-specific pipeline components.
+documents which are contextually-relevant but lack substantive
+information. They should also refrain from generating an answer when the
+returned results are not useful, thus minimizing hallucinations. RAG
+systems should also be able to synthesize information across multiple
+documents and identify known inaccuracies. To ensure systems possess
+these capabilities, @gao2024rag emphasize that RAG systems inherently
+have two distinct objectives: retrieval and generation. Because the
+quality of the retrieved context fundamentally dictates the generation
+quality, the components should be evaluated separately.
 
-Despite the importance of evaluating the components individually, RAG
-systems have traditionally been evaluated end-to-end, combining
-retrieval and generation performance into a single evaluation. To
-address this limitation, @salemi2024eRAG propose eRAG, a method for
-evaluating retrieval quality independently. eRAG is a system where the
-LLM individually processes each document returned by the retriever and
-generates an answer. Metrics, such as Exact Match or ROUGE, can be
-employed to generate a utility score based upon the LLM’s ability to
-answer the user’s query using only that document’s content. The accuracy
-scores can then be aggregated set-wise, and the retrieved result set can
-be evaluated using standard metrics, including precision and recall. The
-authors demonstrate that this method of evaluation is more
-computationally efficient, reducing runtime complexity from $O(lk^2d^2)$
-to $O(lkd^2)$, where k is the number of documents, d is the average
-length of each document, and l is the length of the generated output.
-Running the LLM k times, rather than combining all k documents into a
-single input, helps to avoid the quadratic cost penalty applied by
-standard transformers to long inputs. Upon evaluation, the authors found
-that eRAG is 2.5 times faster and significantly more memory-efficient
-than traditional end-to-end evaluation systems. eRAG also consistently
-outperformed more traditional systems, including the KILT benchmark and
-Relevance Annotation with LLM. This technique is directly applicable to
-the development of an intelligent advisor, during both system
-development and in production. During development, eRAG is an efficient
-way to compare retriever performance as different optimization
-techniques are implemented. In production, it can be used to filter
-returned text chunks for relevancy and quality, prior to generating a
-response for the user.
+To address the limitations of traditional end-to-end evaluation,
+@salemi2024eRAG propose eRAG, a method for evaluating retrieval quality
+independently. eRAG uses an LLM to individually process each document
+returned by the retriever and generate a utility score based upon its
+ability to answer the user’s query using only that document’s content.
+The authors demonstrate that this method of evaluation is highly
+computationally efficient, reducing runtime complexity by avoiding the
+quadratic cost penalty applied by standard transformers to long inputs.
 
-Naive and Advanced RAG pipelines are linear in flow: The system receives
-the user's query, retrieves the relevant documents and returns them to
-the LLM, which generates a result. Modular RAG instead provides the
-capability to alter this flow, in the form of advanced architecture.
-Building upon the foundational principles of Naive RAG and Advanced RAG,
-Modular RAG systems aim to improve context, flexibility, and overall
-efficiency by enabling loops. Techniques include recursive and adaptive
-retrieval. Recursive retrieval initializes with a complete iteration;
-however, it then allows the generator LLM to judge the relevance of the
-most recent results. The LLM may choose to recursively perform the RAG
-process, applying query improvement techniques as needed to improve the
-relevancy of results. Finally, adaptive retrieval utilizes fine-tuned
-LLMs to intelligently decide if the RAG process is necessary
-[@gao2024rag].
+Upon evaluation, the authors found that eRAG is 2.5 times faster and
+significantly more memory-efficient than traditional end-to-end
+evaluation systems. eRAG also consistently outperformed more traditional
+systems, including the KILT benchmark and Relevance Annotation with LLM.
+This technique is directly applicable to the development of an
+intelligent advisor, as isolating the retriever enables greater
+visibility into how different indexing and chunking optimizations impact
+the system's performance.
+
+While Naive and Advanced RAG pipelines are linear in flow, Modular RAG
+offers the capability to alter this flow, in the form of advanced
+architecture. Building upon the foundational principles of Naive RAG and
+Advanced RAG, Modular RAG systems aim to improve context, flexibility,
+and overall efficiency by enabling recursive and adaptive loops.
+Recursive retrieval initializes with a complete iteration; however, it
+then allows the generator LLM to judge the relevance of the most recent
+results. The LLM may choose to recursively perform the RAG process,
+applying query improvement techniques as needed to improve the relevancy
+of results. Adaptive retrieval utilizes fine-tuned LLMs to intelligently
+decide if the RAG process is necessary for a given prompt, increasing
+computational efficiency [@gao2024rag].
 
 Agentic AI systems possess autonomous planning and decision-making
-capabilities, as well as the ability to sense changes in their
-environment and react accordingly, making these systems perfect
-candidates for implementing both Modular and Advanced RAG techniques.
-@AgenticAI2025Jagga highlights several core architectural components of
-agentic systems that are relevant to a RAG-enabled academic advisor.
-Beginning with perception modules, which serve as the input for sensory
-information, the author argues that complex modules, or those that
-utilize transformations to derive contextual meaning from simple inputs,
-outperform context-free systems in ambiguous scenarios. In the context
-of this study, this emphasizes the importance of query optimizations,
-utilizing an agent to enhance or decompose a query, increasing the RAG
-pipeline's ability to return and generate relevant results. The author's
-emphasis on accurate, fast, and easy-to-maintain knowledge
-representation systems is enabled by access to a well-designed RAG
-knowledge base, utilizing Advanced RAG's index and embedding
-optimization techniques. The strength of hierarchical design is echoed
-by both @gao2024rag and @AgenticAI2025Jagga.
+capabilities, making these systems perfect candidates for implementing
+both Modular and Advanced RAG techniques. @AgenticAI2025Jagga highlights
+several core architectural components of agentic systems relevant to a
+RAG-enabled academic advisor. In the context of this study, an agent's
+perception module maps directly to its ability to apply query
+optimization, where the agent enhances or decomposes a query to avoid
+ambiguous scenarios, which may impact retrieval performance. An
+accurate, fast, and easy-to-maintain knowledge representation system is
+enabled by access to a well-designed RAG knowledge base, utilizing
+Advanced RAG's index and embedding optimization techniques. The strength
+of hierarchical design is echoed by both @gao2024rag and
+@AgenticAI2025Jagga.
 
-Optimizing an agentic system's planning and reasoning framework involves
-enabling the agent with hierarchical decomposition or adaptive
-capabilities. Hierarchical decomposition allows the agent to break a
-single task into several subsequent tasks. Adaptive agents can adjust
-their planning mechanism in response to the task [@AgenticAI2025Jagga].
-Agentic RAG systems enabled with one or more of these capabilities
-showcase a modular architecture. An adaptive agent may recognize when
-the retrieved results are non-substantive and opt to re-retrieve results
-with an enhanced query, a combination of Modular RAG's recursive
-retrieval and Advanced RAG's query optimization techniques. This
-capability also ensures that the systems do not generate a response when
-presented with non-substantive or non-relevant retrieval results, a key
-feature of robust systems [@gao2024rag]. Finally, a key advantage of
-adaptive agentic systems is the ability to include humans in the
-planning and action stages. @AgenticRAGwHumans note that users may pose
-specific questions which lack context; advanced users may possess an
-"implicit understanding that is difficult to articulate or extract."
-Rather than inputting the raw query to the RAG pipeline, the agent may
-request feedback for additional information or to clarify assumptions.
-This is a novel application of Advanced RAG's pre-processing techniques
-in an agentic, modular context.
-
-In the context of a RAG-enabled agentic advisor, one or more of the
-agent's action execution mechanisms (tools) will be devoted to the
-execution of the RAG pipeline, including user query embedding and
-retrieval of the top-K most similar documents from the document index.
-Agentic systems, particularly those with adaptive capabilities,
-incorporate Modular RAG's adaptive retrieval, as the agent can
-autonomously decide whether to call the RAG tool(s) depending upon the
-user's query. Adaptive agents also add an additional layer of error
-handling, as the agent can intelligently choose to re-execute an action
-mechanism with the same or different arguments, depending upon the error
-message. This, in combination with incorporating robust error-handling
-into the agents' tools, helps to ensure a reliable, agentic advisor
-system.
-
-Agentic systems can contain one or more agents chained together, with
-research indicating that a well-designed multi-agent system can
-outperform a monolithic system [@AgenticAI2025Jagga]. Multi-agent
-systems may utilize a hierarchical architecture, where a higher-level
-agent delegates tasks to a lower-level agent, allowing for agent
-specialization and efficient resource allocation. Consensus-based
-coordination excels in scenarios with high uncertainty, allowing agents
-to reach a consensus based on collective decision-making. In the context
-of a RAG architecture, a centralized agent may designate RAG-related
-tasks to one or more RAG-enabled agents. Consensus-based coordination
-may be used to determine the quality of the retrieved context prior to
-generating a response for the user, utilizing scoring metrics or
-re-ranking algorithms. This is an agentic implementation of Advanced
-RAG's post-processing techniques.
+Optimizing an agentic system's planning and reasoning framework can be
+achieved by selecting an underlying LLM which possesses hierarchical
+decomposition and strong adaptive capabilities. For an Agentic RAG
+system, the agent utilizes action execution mechanisms (tools) to
+interact with the knowledge base. The agent can autonomously decide
+whether to execute the RAG pipeline by calling the RAG tool, depending
+upon the user's query. Futhermore, the agent can recognize when
+retrieved results are non-substantive, opting to re-retrieve results
+with an enhanced or rewritten query. These capabilities are a natural
+extension of Modular RAG techniques. Finally, an agentic architecture
+adds an additional layer of error-handling, applying reasoning to
+process any error messages returned by tool calls [@AgenticAI2025Jagga].
+The agent can choose to re-execute an action mechanism with the same or
+different arguments, call a different tool, or return the error to the
+user in a natural language. These capabilites increase the system's
+overall robustness.
 
 The reviewed literature comprehensively documents the RAG architecture
 and recent advancements to include Naive RAG, Advanced RAG, Modular RAG,
-Agentic RAG, and human-in-the-loop architectures. In these studies,
-performance was systematically evaluated using common benchmarking
-datasets and metrics; however, limited research exists which evaluates
-the application of Advanced RAG or Modular RAG techniques in agentic
-systems, specifically one employed in a domain-specific application.
-Furthermore,
+and Agentic RAG. In these studies, performance was systematically
+evaluated using common benchmarking datasets and metrics; however,
+limited research exists which evaluates the application of Advanced and
+Modular RAG techniques in agentic systems, specifically one employed in
+a domain-specific application.
 
-\*\*Look into discussing https://aclanthology.org/2025.magmar-1.2.pdf -
-Single agent multi-modal, no published metrics.\*
-
-### Sentences that I've typed and will probably use somewhere
-
-In this study, knowledge base documents were chunked based on document
-structure, then on chunk size, enabling a 20% context overlap. This
-study also implemented metadata enrichment. Source hierarchy and header
-information were injected into chunk content to improve dense embeddings
-and increase retrieval precision.
-
-This study expands upon both @gao2024rag and @BlendedRAG, implementing a
-hybrid index, which utilizes dense embeddings and sparse-encoded
-embeddings.
-
-This research aims to implement techniques from both Advanced RAG and
-Modular RAG technological paradigms in an agentic context, utilizing
-different agentic architectures to identify which combination of
-techniques provides the optimal performance in an academic environment.
-
-------------------------------------------------------------------------
+This research aims to bridge that gap by implementing techniques from
+both Advanced RAG and Modular RAG in a single-agent context. Expanding
+upon the recommendations of both @gao2024rag and @BlendedRAG, this study
+implements a hybrid index utilizing both dense and sparse-encoded
+embeddings. The documents are chunked based on structural hierarchy,
+then on chunk size, enabling a 20% context overlap. Rule-based and
+LLM-enabled intelligent filtering are applied to remove noisy and
+non-substantive chunks from the knowledge base. Finally, the content is
+enriched with metadata to improve retrieval precision. By isolating and
+evaluating the retriever independently, this studies identifies the
+optimal data-preparation and indexing strategies required to build a
+reliable agentic academic advisor.
 
 ## Methodology
 
@@ -591,14 +513,14 @@ compliance with the API's 2 MB request body limit
 The retrieval process begins by transforming the user's natural language
 query into vector representations. The RAG pipeline utilizes the same
 embedding models used during ingestion, ensuring alignment between the
-query vectors and the document vectors. The dense
-`gemini-embedding-001` model's `task_type` parameter was set to
-`RETRIEVAL_QUERY`, which optimizes the resulting vector for finding
-semantic matches, rather than representing document content. The sparse
-`pinecone-sparse-english-v0` model was initialized with
-`input_type="query"`. This optimizes the vector for short, interrogative
-inputs rather than longer passages. Both embedding types are normalized
-using the same Euclidean Normalization algorithm as the document base.
+query vectors and the document vectors. The dense `gemini-embedding-001`
+model's `task_type` parameter was set to `RETRIEVAL_QUERY`, which
+optimizes the resulting vector for finding semantic matches, rather than
+representing document content. The sparse `pinecone-sparse-english-v0`
+model was initialized with `input_type="query"`. This optimizes the
+vector for short, interrogative inputs rather than longer passages. Both
+embedding types are normalized using the same Euclidean Normalization
+algorithm as the document base.
 
 ##### Hybrid Search and Scoring
 
@@ -699,24 +621,25 @@ overall experience.
 
 ### RAG Pipeline Performance Testing and Optimization
 
-As encouraged by @gao2024rag, the RAG pipeline's retriever and generator
-were tested independently. Independent testing allows for more nuanced
-diagnostics and targeted improvements. Poor retriever performance may be
-improved by optimizing the knowledge base's data-preparation and
-indexing strategies, or by applying query pre-processing techniques.
-Improving retriever performance should subsequently improve generation
-performance; however, post-retrieval techniques, such as re-ranking or
-context compression, may also help to improve generation performance.
-Model fine-tuning was considered out of scope for this project.
+As encouraged by @gao2024rag, effective evaluation of a RAG system
+requires rigorous testing of individual components. In this study,
+performance evaluation was strictly scoped to the RAG retriever. Because
+accurate generation is fundamentally dependent upon the retrieval of
+highly relevant contexts, optimizing the knowledge base's data
+ingestion, chunking, and indexing strategies was prioritized. Formal
+quantitative evaluation of the generation module (e.g., assessing
+faithfulness and answer relevancy), as well as model fine-tuning, were
+considered out of scope for this project.
 
 #### RAG Retriever Testing
 
 Improving the quality of content returned from the vector store
 subsequently improves the entire pipeline's performance; thus, great
 care was taken to optimize the RAG retriever. Retriever testing was
-performed on three 50-question, independent datasets, withholding one
-50-question dataset for final testing. The other two datasets were used
-for pipeline optimization.
+performed using two independent 50-question datasets. The first dataset
+(Development Set) was used iteratively to tune the indexing and chunking
+strategies. The second 50-question dataset (Holdout Test Set) was
+strictly reserved for final performance evaluation.
 
 The `Ragas` Python library was used to evaluate the retriever's
 performance, using two critical metrics: Context Precision and Context
@@ -758,8 +681,8 @@ with 50 questions, where k = 5 results were retrieved, this produces a
 set of 50 question / context sets, where each context set contains the k
 = 5 retrieved chunks. To evaluate the retriever's performance, Context
 Precision and Context Recall are computed for each question and
-associated context set. Context Precision calls the Ragas LLM (`gpt-4o`) k
-times, one for each retrieved chunk, whereas Context Recall calls the
+associated context set. Context Precision calls the Ragas LLM (`gpt-4o`)
+k times, one for each retrieved chunk, whereas Context Recall calls the
 Ragas LLM once per question. These individual metrics are recorded per
 question, then aggregated across the entire dataset. This process is
 then repeated five times per RAG pipeline design, documenting cross-run
@@ -783,7 +706,7 @@ The testing process is computationally intensive. Testing a dataset of
 API calls:
 
 | Number of API Calls | Model | Purpose |
-| :--- | :--- | :--- |
+|:---|:---|:---|
 | 50 | `pinecone-sparse-english-v0` | Generate Sparse Embeddings |
 | 50 | `gemini-embeddings-001` | Generate Dense Embeddings |
 | 250 | `gpt-4o` | Compute Context Precision - k calls per question |
@@ -823,8 +746,8 @@ Consequently, the chunking strategy was revised to split on levels 1 and
 2, better preserving context throughout procedural documents. This
 reduced the total number of upserted chunks from 5386 to 4091. This
 strategy also increased the retriever's average Context Recall
-performance by 7% on the testing dataset. Using the example above, the
-11 instructional steps are now split over two chunks, rather than 11
+performance by 7% on the development dataset. Using the example above,
+the 11 instructional steps are now split over two chunks, rather than 11
 chunks, allowing the retriever to return all steps in the procedure.
 This increased both Context Precision and Context Recall to 1.00.
 @fig-h1-h2-chunking-strat below shows a single context, capturing Steps
@@ -836,31 +759,25 @@ fig-align="center"}
 
 ##### Text Chunk Filtering
 
-Analysis of the testing results following the chunking strategy revision
-revealed chunks which contained irrelevant or non-substantive text.
-These chunks were being returned by the retriever due to the relevance
-of the prepended metadata. Rule-based filtering was applied where there
-was little risk of excluding chunks with substantive content. Filtering
-was applied prior to prepending the metadata; all headers were stripped,
-leaving only the chunk's body. Chunks containing no body text, or those
-which contained only leftover structural content or placeholder text,
-were removed. This automated filtering removed 267 non-semantic chunks
-(\~ 6.5%) from the vector store. The breakdown can be seen in
-@tbl-chunk-filtering below.
+Analysis of the development set results following the chunking strategy
+revision revealed chunks which contained irrelevant or non-substantive
+text. These chunks were being returned by the retriever due to the
+relevance of the prepended metadata. Rule-based filtering was applied
+where there was little risk of excluding chunks with substantive
+content. Filtering was applied prior to prepending the metadata; all
+headers were stripped, leaving only the chunk's body. Chunks containing
+no body text, or those which contained only leftover structural content
+or placeholder text, were removed. This automated filtering removed 267
+non-semantic chunks (\~ 6.5%) from the vector store. The breakdown can
+be seen in @tbl-chunk-filtering below.
 
-+------------------------------------+-------------------------+
-| Filter:                            | Count:                  |
-+====================================+=========================+
-| Empty Body                         | 192                     |
-+------------------------------------+-------------------------+
-| FAQ Placeholder                    | 47                      |
-+------------------------------------+-------------------------+
-| Only Hyphens                       | 11                      |
-+------------------------------------+-------------------------+
-| CMS Placeholders                   | 11                      |
-+------------------------------------+-------------------------+
-| Related Articles Placeholder       | 6                       |
-+------------------------------------+-------------------------+
+| Filter:                      | Count: |
+|------------------------------|--------|
+| Empty Body                   | 192    |
+| FAQ Placeholder              | 47     |
+| Only Hyphens                 | 11     |
+| CMS Placeholders             | 11     |
+| Related Articles Placeholder | 6      |
 
 : Rule-Based Filtering. {#tbl-chunk-filtering}
 
@@ -883,16 +800,16 @@ Stub](Images/Overview_Section_Comparison.png){#fig-overview-substantive-vs-stub
 fig-align="center"}
 
 The subjective nature of relevancy lends itself well to LLM usage;
-`Claude Haiku 4.5` was utilized to determine the relevancy of these stubs,
-again balancing reasoning capability with cost and ensuring a different
-LLM family than RAG evaluation models. The LLM was only called for
-chunks matching specific patterns frequently found within the overview
-sections (e.g., "This page contains...", "Here you will find..."),
-reducing total upsertion cost. For a corpus containing 4091 chunks, the
-LLM was called only 79 times (\~ 1.93% of total chunks evaluated). The
-LLM prompt was tuned prior to vector store re-indexing, ensuring that
-the LLM's evaluation of relevancy aligned with human evaluation. The
-full prompt can be found in @fig-prompt-llm-stub below.
+`Claude Haiku 4.5` was utilized to determine the relevancy of these
+stubs, again balancing reasoning capability with cost and ensuring a
+different LLM family than RAG evaluation models. The LLM was only called
+for chunks matching specific patterns frequently found within the
+overview sections (e.g., "This page contains...", "Here you will
+find..."), reducing total upsertion cost. For a corpus containing 4091
+chunks, the LLM was called only 79 times (\~ 1.93% of total chunks
+evaluated). The LLM prompt was tuned prior to vector store re-indexing,
+ensuring that the LLM's evaluation of relevancy aligned with human
+evaluation. The full prompt can be found in @fig-prompt-llm-stub below.
 
 ![LLM Stub Filter
 Prompt](Images/LLM_Stub_Filter_Prompt.png){#fig-prompt-llm-stub
@@ -927,9 +844,23 @@ fig-align="center"}
 
 #### RAG Knowledge Base Dataset
 
-The entire document corpus contains 788 files. 787 files were obtained from scraping the UWF Public Confluence Tree, which contains relevant information for students, faculty, and staff, including topics such as course registration, academic advising and more. UWF's Department of Mathematics and Statistics' 2024-2025 Graduate Student Handbook was also uploaded as a PDF file. It contains information pertinent to the department's graduate degree programs and certifications.
+The entire document corpus contains 788 files. A total of 787 files were
+obtained from scraping the UWF Public Confluence Tree, which contains
+relevant information for students, faculty, and staff, including topics
+such as course registration, academic advising and more. UWF's
+Department of Mathematics and Statistics' 2024-2025 Graduate Student
+Handbook was also uploaded as a PDF file. It contains information
+pertinent to the department's graduate degree programs and
+certifications.
 
-The initial chunking strategy utilized a hierarchical-recursive chunking strategy, splitting on Levels 1 through 4. This resulted in a total of 5386 chunks. However, following testing, the chunking strategy was ammended to reduce the granularity of chunks, splitting on Header Levels 1 through 2. With each subsequent improvement, the number of chunks was reduced. The final strategy implemented additional filtering to remove noisy and/or non-substantive chunks from the corpus. The final Pinecone Hybrid Index contained 3764 vectorized and text chunks.
+The initial approach utilized a hierarchical-recursive chunking
+strategy, splitting on Levels 1 through 4. This resulted in a total of
+5386 chunks. However, following testing, the chunking strategy was
+amended to reduce the granularity of chunks, splitting on Header Levels
+1 through 2. With each subsequent improvement, the number of chunks was
+reduced. The final strategy implemented additional filtering to remove
+noisy and/or non-substantive chunks from the corpus. The final Pinecone
+Hybrid Index contained 3764 vectorized and text chunks.
 
 | Strategy                  | Number of Chunks: |
 |---------------------------|-------------------|
@@ -942,20 +873,20 @@ The initial chunking strategy utilized a hierarchical-recursive chunking strateg
 
 #### Performance Evaluation Dataset
 
-Three 50-question datasets were generated from the available corpus of
-documents to use for RAG pipeline performance evaluation. Two datasets
-were used to tune the RAG pipeline, while the third dataset was retained
-for final performance evaluation. Dataset generation was automated and
-randomized.
+Two independent 50-question datasets were generated from the available
+corpus of documents to use for RAG pipeline performance evaluation. The
+first dataset, or the development set, used to tune the RAG pipeline,
+while the second dataset was retained for final performance evaluation.
+Dataset generation was automated and randomized.
 
 For each dataset, all available documents were loaded and filtered for a
 minimum length to ensure enough content for question generation. 50
 documents were randomly sampled without replacement, using Python's
-`random` module. `Claude Haiku 4.5` was used to generate a single natural
-language QA pair per document. Limiting content generation per document
-ensures broad topical coverage of the corpus and prevents over-indexing
-a single document. @fig-LLM-QA-Generation below shows the prompt used to
-generate the question and ground truth pairs.
+`random` module. `Claude Haiku 4.5` was used to generate a single
+natural language QA pair per document. Limiting content generation per
+document ensures broad topical coverage of the corpus and prevents
+over-indexing a single document. @fig-LLM-QA-Generation below shows the
+prompt used to generate the question and ground truth pairs.
 
 ![LLM Prompt: Question / Ground Truth
 Generation](Images/Question_GroundTruth_Prompt.png){#fig-LLM-QA-Generation
@@ -963,36 +894,57 @@ fig-align="center" width="568"}
 
 The Anthropic Claude family was explicitly chosen as it belongs to a
 different LLM family than the Ragas LLM (OpenAI GPT), limiting bias
-between QA generation and performance evaluation. `Claude Haiku 4.5` was chosen
-from Anthropic's available Claude models, as it has similar reasoning
-capabilities to Sonnet-4 but is much cheaper. The QA pairs were
-aggregated and exported to a .csv file, ready for use within the
-performance evaluation pipeline. This process was then repeated two more
-times to generate the datasets. An example of a generated question and
-ground truth pair can be seen in @fig-QA-Generation below.
+between QA generation and performance evaluation. `Claude Haiku 4.5` was
+chosen from Anthropic's available Claude models, as it has similar
+reasoning capabilities to Sonnet-4 but is much cheaper. The QA pairs
+were aggregated and exported to a .csv file, ready for use within the
+performance evaluation pipeline. This process was then repeated one more
+time to generate the second, independent dataset. An example of a
+generated question and ground truth pair can be seen in
+@fig-QA-Generation below.
 
 ![Generated Question / Ground Truth
 Pair](Images/QA_Example.png){#fig-QA-Generation fig-align="center"}
 
 ### RAG Pipeline Performance Analysis
 
-@tbl-dataset1-testing-res reports the results on the first batch of the
-testing datasets:
+#### Development Dataset Evaluation
 
-+-------------------+----------------+-------------------+
-| Pipeline Design   | Average        | Average Context   |
-| Iteration         | Context Recall | Precision         |
-+:=================:+:==============:+:=================:+
-| Baseline          | 0.78 ± 0.00    | 0.74 ± 0.01       |
-+-------------------+----------------+-------------------+
-| H1/H2 Chunking    | 0.85 ± 0.00    | 0.74 ± 0.01       |
-| Strategy          |                |                   |
-+-------------------+----------------+-------------------+
-| H1/H2 + Stub      | 0.89 ± 0.00    | 0.77 ± 0.01       |
-| Filtering         |                |                   |
-+-------------------+----------------+-------------------+
+@tbl-dataset1-testing-res reports the results of iterative optimizations
+to the chunking and indexing strategies. These results were generated by
+running the evaluation pipeline using the development dataset. The
+Average Context Recall improved by 11% between the baseline strategies
+and the final strategy. The Average Context Precision also improved,
+though the improvements were less significant, with a 3% net
+improvement.
 
-: Testing Results - Generated Dataset #1. {#tbl-dataset1-testing-res}
+| Pipeline Design Iteration | Average Context Recall | Average Context Precision |
+|:------------------:|:----------------:|:------------------:|
+|         Baseline          |      0.78 ± 0.00       |        0.74 ± 0.01        |
+|  H1/H2 Chunking Strategy  |      0.85 ± 0.00       |        0.74 ± 0.01        |
+|  H1/H2 + Stub Filtering   |      0.89 ± 0.00       |        0.77 ± 0.01        |
+
+: Testing Results - Development Dataset. {#tbl-dataset1-testing-res}
+
+#### Holdout Test Set Evaluation
+
+To validate the improvements observed, the system was evaluated against
+the holdout testing set. Because the pipeline's design was strictly
+tuned using the development set, performance on the holdout set
+represents the system's true expected performance.
+
+@tbl-holdout-testing-res details the final average Context Recall and
+Context Precision metrics across five independent runs.
+
+| Pipeline Design Iteration | Average Context Recall | Average Context Precision |
+|:-----------------------:|:---------------------:|:-----------------------:|
+| Optimized Pipeline (H1/H2 + Stub Filtering) |  ± |  ± |
+
+Testing Results - Holdout Dataset. {#tbl-holdout-testing-res}
+
+#### Analysis
+
+#### Agentic RAG Advantage
 
 ### Conclusion
 
