@@ -52,29 +52,31 @@ though their knowledge is strictly limited to the data they were exposed
 to during training. These models do not have access to any information
 published after their training cutoff date. Despite this, models may
 attempt to answer a question about information that they were not
-trained upon, resulting in hallucinated responses. Furthermore,
-generated responses do not have source information, leaving users unable
-to verify the accuracy of responses. These limitations are unacceptable
-in an academic setting. Academic policies, degree requirements, and
-program offerings change regularly. An intelligent advising assistant
-must be able to access the most up-to-date information at all times,
-providing grounded, verifiable responses with clear citations.
+trained upon, resulting in hallucinated responses
+[@ji2023hallucination]. Furthermore, generated responses do not have
+source information, leaving users unable to verify the accuracy of
+responses. These limitations are unacceptable in an academic setting.
+Academic policies, degree requirements, and program offerings change
+regularly. An intelligent advising assistant must be able to access the
+most up-to-date information at all times, providing grounded, verifiable
+responses with clear citations.
 
 Retrieval-augmented generation (RAG) addresses these limitations by
 enabling access to non-parametric knowledge, or information retrieved
 from external knowledge stores at the time of the user's query rather
 than from within the model's parametric knowledge [@lewis2020retrieval].
-This expands the model's memory and significantly reduces
-hallucinations. The process is as follows: A pre-trained retrieval model
-encodes the user's query and uses Maximum Inner Product Search (MIPS) to
-identify the top-K most relevant documents from the document index. The
-pre-trained generation model then crafts its response based on both the
-user's original query and the retrieved documents. This architecture
-overcomes the knowledge-cutoff date problem present in LLMs. The model's
-non-parametric knowledge can be updated simply by encoding and upserting
-the updated information to the document index. This is a more practical
-option, as it is computationally less expensive, less time-consuming,
-and less technically complex than retraining the generation model.
+This expands the model's memory and significantly reduces hallucinations
+[@ji2023hallucination]. The process is as follows: A pre-trained
+retrieval model encodes the user's query and uses Maximum Inner Product
+Search (MIPS) to identify the top-K most relevant documents from the
+document index. The pre-trained generation model then crafts its
+response based on both the user's original query and the retrieved
+documents. This architecture overcomes the knowledge-cutoff date problem
+present in LLMs. The model's non-parametric knowledge can be updated
+simply by encoding and upserting the updated information to the document
+index. This is a more practical option, as it is computationally less
+expensive, less time-consuming, and less technically complex than
+retraining the generation model.
 
 It is also a more effective architecture, as @lewis2020retrieval prove
 that the RAG architecture outperforms state-of-the-art models on
@@ -203,18 +205,19 @@ Optimizing an agentic system's planning and reasoning framework can be
 achieved by selecting an underlying LLM which possesses hierarchical
 decomposition and strong adaptive capabilities. For an Agentic RAG
 system, the agent utilizes action execution mechanisms (tools) to
-interact with the knowledge base. The agent can autonomously decide
-whether to execute the RAG pipeline by calling the RAG tool, depending
-upon the user's query. Futhermore, the agent can recognize when
-retrieved results are non-substantive, opting to re-retrieve results
-with an enhanced or rewritten query. These capabilities are a natural
-extension of Modular RAG techniques. Finally, an agentic architecture
-adds an additional layer of error-handling, applying reasoning to
-process any error messages returned by tool calls [@AgenticAI2025Jagga].
-The agent can choose to re-execute an action mechanism with the same or
-different arguments, call a different tool, or return the error to the
-user in a natural language. These capabilites increase the system's
-overall robustness.
+interact with the knowledge base. Utilizing a ReAct framework
+\[@yao2022react\], the agent can autonomously decide whether to execute
+the RAG pipeline by calling the RAG tool, depending upon the user's
+query. Futhermore, the agent can recognize when retrieved results are
+non-substantive, opting to re-retrieve results with an enhanced or
+rewritten query. These capabilities are a natural extension of Modular
+RAG techniques. Finally, an agentic architecture adds an additional
+layer of error-handling, applying reasoning to process any error
+messages returned by tool calls [@AgenticAI2025Jagga]. The agent can
+choose to re-execute an action mechanism with the same or different
+arguments, call a different tool, or return the error to the user in a
+natural language. These capabilites increase the system's overall
+robustness.
 
 The reviewed literature comprehensively documents the RAG architecture
 and recent advancements to include Naive RAG, Advanced RAG, Modular RAG,
@@ -836,8 +839,6 @@ at hand.
 Results](Images/Stub_Filtering_Comparison_Study_ABroad.png){#fig-post-filter-chunking-res
 fig-align="center"}
 
-#### RAG Generation Testing
-
 ## Analysis and Results
 
 ### Data Exploration and Visualization
@@ -919,7 +920,7 @@ though the improvements were less significant, with a 3% net
 improvement.
 
 | Pipeline Design Iteration | Average Context Recall | Average Context Precision |
-|:------------------:|:----------------:|:------------------:|
+|:-----------------------:|:---------------------:|:-----------------------:|
 |         Baseline          |      0.78 ± 0.00       |        0.74 ± 0.01        |
 |  H1/H2 Chunking Strategy  |      0.85 ± 0.00       |        0.74 ± 0.01        |
 |  H1/H2 + Stub Filtering   |      0.89 ± 0.00       |        0.77 ± 0.01        |
@@ -938,11 +939,18 @@ Context Precision metrics across five independent runs.
 
 | Pipeline Design Iteration | Average Context Recall | Average Context Precision |
 |:-----------------------:|:---------------------:|:-----------------------:|
-| Optimized Pipeline (H1/H2 + Stub Filtering) |  ± |  ± |
+| Optimized Pipeline (H1/H2 + Stub Filtering) | 0.97 ± 0.00 | 0.83 ± 0.01 |
 
 Testing Results - Holdout Dataset. {#tbl-holdout-testing-res}
 
 #### Analysis
+
+Comparing the evaluation results for the testing dataset vs. the holdout
+dataset, the pipeline's performance actually improved for the holdout
+dataset, increasing Average Context Recall by 8% (0.89 to 0.97) and
+Average Context Precision by 6% (0.77 to 0.83). This suggests that the
+improved chunking and indexing strategies generalize well to unseen
+datasets.
 
 #### Agentic RAG Advantage
 
@@ -951,5 +959,12 @@ Testing Results - Holdout Dataset. {#tbl-holdout-testing-res}
 -   Summarize your key findings.
 
 -   Discuss the implications of your results.
+
+## Declaration of Generative AI Use
+
+Generative AI was used to edit this paper for grammar, clarity, and
+conciseness. It was also used to evaluate general logic flow. All
+original ideas, including research methodology, data analysis, and
+technical content, presented in this paper are my own.
 
 ## References
