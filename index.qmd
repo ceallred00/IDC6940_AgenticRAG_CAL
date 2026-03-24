@@ -717,8 +717,6 @@ API calls:
 
 : API Call Breakdown. {#tbl-API-Call-Breakdown}
 
-: API Call Breakdown. {#tbl-API-Call-Breakdown}
-
 Running the pipeline for a single model iteration five times makes 2000
 total API calls: 500 API calls to the Embedding Models and 1500 API
 calls to a generative LLM.
@@ -941,7 +939,7 @@ Context Precision metrics across five independent runs.
 |:-----------------------:|:---------------------:|:-----------------------:|
 | Optimized Pipeline (H1/H2 + Stub Filtering) | 0.97 ± 0.00 | 0.83 ± 0.01 |
 
-Testing Results - Holdout Dataset. {#tbl-holdout-testing-res}
+: Testing Results - Holdout Dataset. {#tbl-holdout-testing-res}
 
 #### Analysis
 
