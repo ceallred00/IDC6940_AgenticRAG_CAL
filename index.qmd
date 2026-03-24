@@ -2,7 +2,7 @@
 title: "Enhancing Agentic RAG: Optimizing Hybrid Retrieval for an Autonomous Academic Advising Agent"
 author: "Cheyanne Allred-Lopez (Advisor: Dr. Cohen)"
 date: '`r Sys.Date()`'
-format:
+format: 
   html:
     code-fold: true
 course: Capstone Projects in Data Science
@@ -206,7 +206,7 @@ achieved by selecting an underlying LLM which possesses hierarchical
 decomposition and strong adaptive capabilities. For an Agentic RAG
 system, the agent utilizes action execution mechanisms (tools) to
 interact with the knowledge base. Utilizing a ReAct framework
-\[@yao2022react\], the agent can autonomously decide whether to execute
+[@yao2022react], the agent can autonomously decide whether to execute
 the RAG pipeline by calling the RAG tool, depending upon the user's
 query. Futhermore, the agent can recognize when retrieved results are
 non-substantive, opting to re-retrieve results with an enhanced or
@@ -945,20 +945,44 @@ Testing Results - Holdout Dataset. {#tbl-holdout-testing-res}
 
 #### Analysis
 
-Comparing the evaluation results for the testing dataset vs. the holdout
-dataset, the pipeline's performance actually improved for the holdout
-dataset, increasing Average Context Recall by 8% (0.89 to 0.97) and
-Average Context Precision by 6% (0.77 to 0.83). This suggests that the
-improved chunking and indexing strategies generalize well to unseen
-datasets.
+Comparing the evaluation results for the development dataset versus the
+holdout dataset, the pipeline's performance exhibited strong
+generalization capabilities. Performance on the holdout dataset
+demonstrated an increase in Average Context Recall of 8% (0.89 to 0.97)
+and an increase in Average Context Precision of 6% (0.77 to 0.83). These
+results highlight the strengths of the chunking and indexing strategy
+improvements.
+
+Analysis of the precision scores indicates that the retriever struggles
+with words that are semantically ambiguous. For example, for the query
+*"How do I enroll in the UWF Student Orientation eLearning course?"*,
+the retriever returns chunks related to Dual Enrollment Orientation and
+a generic eLearning Canvas Orientation. Because the registration process
+is nearly identical between the programs, the retriever struggles to
+differentiate between the two. Additionally, for procedural queries,
+such as *"What do I need to do before UWF can issue my Form I-20 as an
+international graduate student?"*, the correct answer was retrieved;
+however, the remaining four slots were filled with tangentially-related
+policies, such as transferring a form I-20 or instructions on how to
+submit proof of identity. Because the ground truth context was not
+returned as the top result, the question's precision score degraded.
 
 #### Agentic RAG Advantage
 
-### Conclusion
+The Agentic RAG pipeline has a great advantage over a Naive RAG
+Pipeline. An average Context Precision of 0.83 suggests that a portion
+of the top-k results returned are irrelevant. Though this study
+evaluated only the retriever's performance, the end-to-end experience
+must be considered. The agentically-enhanced generation module is
+capable of intelligent filtering, improving the results returned to the
+user. Additionally, using the same query as above, an intelligent agent
+will possess the ability to process the retrieved results, determine
+relevancy, and intelligently decide to re-call the RAG tool with an
+enhanced query. These capabilities provide an inherent advantage over
+Naive RAG, whose performance may suffer from semantically ambiguous
+topics.
 
--   Summarize your key findings.
-
--   Discuss the implications of your results.
+## Conclusion
 
 ## Declaration of Generative AI Use
 
