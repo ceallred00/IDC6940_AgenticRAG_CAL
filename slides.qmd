@@ -1,9 +1,12 @@
 ---
-title: "Enhancing Agentic RAG: Optimizing Hybrid Retrieval for an Autonomous Academic Advising Agent"
+title: "Enhancing Agentic RAG:"
+subtitle: "Optimizing Retrieval for an Autonomous Academic Advising Agent"
 author: "Cheyanne Allred-Lopez (Advisor: Dr. Cohen)"
-date: '`r Sys.Date()`'
+date: today
 format:
-  revealjs
+  revealjs:
+    theme: default
+    css: styles.css
 course: Capstone Projects in Data Science
 bibliography: references.bib # file contains bibtex for references
 #always_allow_html: true # this allows to get PDF with HTML features
@@ -32,13 +35,6 @@ editor:
     knowledge stores at query time, overcoming the knowledge-cutoff
     problem and providing transparency through direct citation of
     retrieved content [@lewis2020retrieval]
--   Agentic AI systems add autonomous planning and decision-making on
-    top of the RAG architecture [@AgenticAI2025Jagga]. Using a ReAct
-    (Reason-Act-Observe) framework [@yao2022react], an agent can
-    autonomously implement both Advanced and Modular RAG techniques,
-    deciding when to retrieve, rewrite queries, and iteratively refine
-    results. This is a significant advantage over naive RAG pipelines
-    [@gao2024rag].
 
 ## The Evolution of RAG Architecture {.smaller}
 
@@ -58,9 +54,13 @@ editor:
 -   **Modular RAG:** Transitions the pipeline from a linear flow to an
     advanced, adaptable architecture. It improves context and efficiency
     by enabling recursive retrieval loops, where the LLM judges result
-    relevancy and iterate, and adaptive retrieval, which intelligently
+    relevancy and iterates, and adaptive retrieval, which intelligently
     decides if the RAG process is even necessary for a given prompt
     [@gao2024rag].
+
+-   **Agentic RAG:** Agentic AI systems add autonomous planning and
+    decision-making on top of the RAG architecture
+    [@AgenticAI2025Jagga].
 
 ## Project Goal {.smaller}
 
@@ -75,7 +75,36 @@ editor:
 -   **Research Question:** What data preparation and hybrid indexing
     strategies optimize retrieval performance for an agentic RAG system?
 
-## Knowledge Base Data Ingestion {.smaller}
+# Methodology {.center}
+
+## Agentic RAG Process {.smaller}
+
+-   The system utilizes a command-line AI agent built on the `LangGraph`
+    framework, powered by OpenAI’s `gpt-5.2`, enabling state
+    persistence, multi-turn memory, and recursive loops.
+
+-   Operating on a ReAct (Reason-Act-Observe) architecture
+    [@yao2022react], the agent autonomously decides when to trigger the
+    knowledge base retrieval tool based on user input.
+
+-   The agent dynamically employs Advanced RAG pre-retrieval techniques
+    by evaluating, rewriting, or expanding ambiguous user queries prior
+    to executing the search.
+
+-   Mirroring Modular RAG techniques, the agent evaluates the retrieved
+    context in its updated state and can iteratively refine its query
+    for re-retrieval if the initial results lack substantive answers.
+
+## Agentic RAG Process {.smaller}
+
+![ReAct Architecture Enables Autonomous Employment of Modular RAG
+Techniques](Images/base_agent_v1.png)
+
+## Agentic RAG Process {.smaller}
+
+![Agentic RAG Process Flow Diagram](Images/High_Level_Agentic_RAG.png)
+
+## Knowledge Base Data Sources {.smaller}
 
 -   The corpus was sourced from the UWF Public Knowledge Base
     (Confluence API) and the Graduate Student Handbook (PDF).
@@ -97,7 +126,9 @@ editor:
 
 ## Knowledge Base Development: Chunking & Indexing {.smaller}
 
--   Employed a hierarchical-recursive chunking strategy.
+-   Employed a hierarchical-recursive chunking strategy, essentially
+    preserving the page's structure and keeping relevant information
+    together.
 
 -   Initially, texts were split on Level 1 through 4 headers; however,
     early testing indicated that this resulted in overly granular
@@ -109,34 +140,12 @@ editor:
 -   Each chunk had a 2,000-character limit with a 20% sliding window
     overlap to prevent context truncation [@2025chunkingbps].
 
--   Use-case: An 11-step procedure was previously split over 11 steps.
-    This strategic pivot then resulted in the entire procedure being
-    split over only two chunks.
-
-## Knowledge Base Development: Chunking & Indexing {.smaller}
-
-![H1/H4 Chunking Strategy: Overly Granular
-Chunks](Images/ParkingPermit_Baseline.png)
-
-## Knowledge Base Development: Chunking & Indexing {.smaller}
-
-![H1/H2 Chunking Strategy: Single Chunk](Images/ParkingPermit_H1_H2.png)
-
 ## Knowledge Base Development: Context Enrichment {.smaller}
 
 Text chunks were enriched with metadata (source path, header hierarchy)
 prior to vectorization to improve contextual similarity scoring.
 
 ![](Images/Content_Enrichment.png)
-
-## Knowledge Base Chunk Filtering {.smaller}
-
-Rule-based filtering removed noisy placeholders and LLM-enabled
-intelligent filtering (`Claude Haiku 4.5`) removed non-substantive
-"Overview" stubs, improving system performance.
-
-![Intelligent LLM-Filtering Kept Substantive Chunks while Filtering
-Non-Substantive Chunks](Images/Overview_Section_Comparison.png)
 
 ## Knowledge Base Indexing {.smaller}
 
@@ -161,35 +170,7 @@ Normalization](Images/Vector_Generation.png)
 
 ## Knowledge Base Processing and Ingestion Pipeline {.smaller}
 
-![Knowledge Base Embedding
-Pipeline](Images/Embedding-Pipeline-High-Level.png)
-
-## Agentic RAG Process {.smaller}
-
--   The system utilizes a command-line AI agent built on the `LangGraph`
-    framework, powered by OpenAI’s `gpt-5`, enabling state persistence,
-    multi-turn memory, and recursive loops.
-
--   Operating on a ReAct (Reason-Act-Observe) architecture
-    [@yao2022react], the agent autonomously decides when to trigger the
-    knowledge base retrieval tool based on user input.
-
--   The agent dynamically employs Advanced RAG pre-retrieval techniques
-    by evaluating, rewriting, or expanding ambiguous user queries prior
-    to executing the search.
-
--   Mirroring Modular RAG techniques, the agent evaluates the retrieved
-    context in its updated state and can iteratively refine its query
-    for re-retrieval if the initial results lack substantive answers.
-
-## Agentic RAG Process {.smaller}
-
-![ReAct Architecture Enables Autonomous Employment of Modular RAG
-Techniques](Images/base_agent_v1.png)
-
-## Agentic RAG Process {.smaller}
-
-![Agentic RAG Process Flow Diagram](Images/High_Level_User_RAG.png)
+![Knowledge Base Embedding Pipeline](Images/KB_Ingestion_High_Level.png)
 
 ## RAG Retriever Evaluation Pipeline {.smaller}
 
@@ -243,20 +224,225 @@ Pipeline](Images/RAG%20Retriever%20Eval%20Pipeline%20(1).png)
     Statistics Graduate Student Handbook) and 787 scraped Confluence
     pages.
 
+-   Baseline Chunking Strategy (H1/H4 Structural Splitting): 5386 chunks
+
 -   As chunking and filtering strategies were iteratively optimized, the
     total number of generated chunks was strategically reduced to
     eliminate noise and context fragmentation.
 
-| Strategy                  | Number of Chunks: |
-|---------------------------|-------------------|
-| Baseline                  | 5386              |
-| H1/H2                     | 4091              |
-| H1/H2 with Stub Filtering | 3764              |
+|         Strategy          | Number of Chunks: |
+|:-------------------------:|:-----------------:|
+|         Baseline          |       5386        |
+|           H1/H2           |       4091        |
+| H1/H2 with Stub Filtering |       3764        |
 
-: Knowledge Base Chunking Strategy - Chunking Breakdown.
+: Knowledge Base Chunking Strategy - Chunk Size Breakdown.
 {#tbl-chunk-size-breakdown}
 
-## Results: Development Dataset {.smaller}
+## Knowledge Base Optimization #1: Chunking Strategy {.smaller}
+
+![H1/H4 Chunking Strategy: Overly Granular
+Chunks](Images/ParkingPermit_Baseline.png)
+
+## Knowledge Base Optimization #1: Chunking Strategy {.smaller}
+
+![H1/H2 Chunking Strategy: Single Chunk](Images/ParkingPermit_H1_H2.png)
+
+## Knowledge Base Optimization #1: Chunk Reduction
+
+```{r}
+library(ggplot2)
+
+iterations <- c("Baseline", "H1/H2\nChunking")
+
+precision <- c(0.74, 0.74)
+recall    <- c(0.78, 0.85)
+chunks    <- c(5386, 4091)
+
+df_lines <- data.frame(
+  iteration = rep(factor(iterations, levels = iterations), 2),
+  value     = c(precision, recall),
+  metric    = rep(c("Context Precision", "Context Recall"), each = 2)
+)
+
+df_bars <- data.frame(
+  iteration = factor(iterations, levels = iterations),
+  chunks    = chunks
+)
+
+chunk_min  <- 3000
+chunk_max  <- 6000
+score_min  <- 0.60
+score_max  <- 1.00
+
+rescale_to_score <- function(x) {
+  score_min + (x - chunk_min) / (chunk_max - chunk_min) * (score_max - score_min)
+}
+
+rescale_to_chunks <- function(y) {
+  chunk_min + (y - score_min) / (score_max - score_min) * (chunk_max - chunk_min)
+}
+
+df_bars$chunks_scaled <- rescale_to_score(df_bars$chunks)
+
+ggplot() +
+  geom_col(
+    data      = df_bars,
+    aes(x = iteration, y = chunks_scaled),
+    fill      = "#E24B4A",
+    alpha     = 0.40,
+    colour    = "#E24B4A",
+    linewidth = 0.5,
+    width     = 0.55
+  ) +
+  geom_line(
+    data      = df_lines,
+    aes(x = iteration, y = value, colour = metric, linetype = metric, group = metric),
+    linewidth = 1.0
+  ) +
+  geom_point(
+    data  = df_lines,
+    aes(x = iteration, y = value, colour = metric, shape = metric),
+    size  = 3.5
+  ) +
+  scale_colour_manual(
+    values = c("Context Precision" = "#378ADD", "Context Recall" = "#1D9E75")
+  ) +
+  scale_linetype_manual(
+    values = c("Context Precision" = "solid", "Context Recall" = "dashed")
+  ) +
+  scale_shape_manual(
+    values = c("Context Precision" = 16, "Context Recall" = 17)
+  ) +
+  scale_y_continuous(
+    name   = "Avg. Context Precision / Recall",
+    breaks = seq(score_min, score_max, by = 0.10),
+    labels = scales::number_format(accuracy = 0.01),
+    sec.axis = sec_axis(
+      transform = rescale_to_chunks,
+      name      = "Total Chunks",
+      breaks    = seq(3000, 6000, by = 500),
+      labels    = scales::comma
+    )
+  ) +
+  coord_cartesian(ylim = c(score_min, score_max)) +
+  scale_x_discrete(name = NULL) +
+  labs(colour = NULL, linetype = NULL, shape = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position     = "top",
+    legend.key.width    = unit(1.8, "cm"),
+    panel.grid.minor    = element_blank(),
+    panel.grid.major.x  = element_blank(),
+    axis.title.y.left   = element_text(margin = margin(r = 10)),
+    axis.title.y.right  = element_text(margin = margin(l = 10), colour = "#E24B4A"),
+    axis.text.y.right   = element_text(colour = "#E24B4A")
+  )
+
+```
+
+## Knowledge Base Optimization #2: Intelligent Chunk Filtering {.smaller}
+
+Rule-based filtering removed noisy placeholders and LLM-enabled
+intelligent filtering (`Claude Haiku 4.5`) removed non-substantive
+"Overview" stubs, improving system performance.
+
+![Intelligent LLM-Filtering Kept Substantive Chunks while Filtering
+Non-Substantive Chunks](Images/Overview_Section_Comparison.png)
+
+## Knowledge Base Optimization #2: Results
+
+```{r}
+library(ggplot2)
+
+iterations <- c("Baseline", "H1/H2\nChunking", "H1/H2 +\nStub Filtering")
+
+precision <- c(0.74, 0.74, 0.77)
+recall    <- c(0.78, 0.85, 0.89)
+chunks    <- c(5386, 4091, 3764)
+
+df_lines <- data.frame(
+  iteration = rep(factor(iterations, levels = iterations), 2),
+  value     = c(precision, recall),
+  metric    = rep(c("Context Precision", "Context Recall"), each = 3)
+)
+
+df_bars <- data.frame(
+  iteration = factor(iterations, levels = iterations),
+  chunks    = chunks
+)
+
+chunk_min  <- 3000
+chunk_max  <- 6000
+score_min  <- 0.60
+score_max  <- 1.00
+
+rescale_to_score <- function(x) {
+  score_min + (x - chunk_min) / (chunk_max - chunk_min) * (score_max - score_min)
+}
+
+rescale_to_chunks <- function(y) {
+  chunk_min + (y - score_min) / (score_max - score_min) * (chunk_max - chunk_min)
+}
+
+df_bars$chunks_scaled <- rescale_to_score(df_bars$chunks)
+
+ggplot() +
+  geom_col(
+    data      = df_bars,
+    aes(x = iteration, y = chunks_scaled),
+    fill      = "#E24B4A",
+    alpha     = 0.40,
+    colour    = "#E24B4A",
+    linewidth = 0.5,
+    width     = 0.55
+  ) +
+  geom_line(
+    data      = df_lines,
+    aes(x = iteration, y = value, colour = metric, linetype = metric, group = metric),
+    linewidth = 1.0
+  ) +
+  geom_point(
+    data  = df_lines,
+    aes(x = iteration, y = value, colour = metric, shape = metric),
+    size  = 3.5
+  ) +
+  scale_colour_manual(
+    values = c("Context Precision" = "#378ADD", "Context Recall" = "#1D9E75")
+  ) +
+  scale_linetype_manual(
+    values = c("Context Precision" = "solid", "Context Recall" = "dashed")
+  ) +
+  scale_shape_manual(
+    values = c("Context Precision" = 16, "Context Recall" = 17)
+  ) +
+  scale_y_continuous(
+    name   = "Avg. Context Precision / Recall",
+    breaks = seq(score_min, score_max, by = 0.10),
+    labels = scales::number_format(accuracy = 0.01),
+    sec.axis = sec_axis(
+      transform = rescale_to_chunks,
+      name      = "Total Chunks",
+      breaks    = seq(3000, 6000, by = 500),
+      labels    = scales::comma
+    )
+  ) +
+  coord_cartesian(ylim = c(score_min, score_max)) +
+  scale_x_discrete(name = NULL) +
+  labs(colour = NULL, linetype = NULL, shape = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(
+    legend.position     = "top",
+    legend.key.width    = unit(1.8, "cm"),
+    panel.grid.minor    = element_blank(),
+    panel.grid.major.x  = element_blank(),
+    axis.title.y.left   = element_text(margin = margin(r = 10)),
+    axis.title.y.right  = element_text(margin = margin(l = 10), colour = "#E24B4A"),
+    axis.text.y.right   = element_text(colour = "#E24B4A")
+  )
+```
+
+## Results Summary: Development Dataset {.smaller}
 
 -   Iterative indexing optimizations tested against the 50-question
     development set yielded significant performance gains.
@@ -277,8 +463,7 @@ Pipeline](Images/RAG%20Retriever%20Eval%20Pipeline%20(1).png)
 
 -   The consistently low standard deviation across all metrics and
     pipeline configurations (≤ 0.01) indicates that the LLM-as-a-judge
-    evaluation
-    is stable and repeatable.
+    evaluation is stable and repeatable.
 
 ## Results: Holdout Dataset {.smaller}
 
@@ -300,9 +485,9 @@ Pipeline](Images/RAG%20Retriever%20Eval%20Pipeline%20(1).png)
     optimizations reliably surface highly relevant context, even for
     unseen procedural queries.
 
--   The low standard deviation observed across five independent
-    runs (≤ 0.01) is consistent with the stability observed during
-    development dataset evaluation.
+-   The low standard deviation observed across five independent runs (≤
+    0.01) is consistent with the stability observed during development
+    dataset evaluation.
 
 ## Conclusion {.smaller}
 
@@ -321,5 +506,7 @@ Pipeline](Images/RAG%20Retriever%20Eval%20Pipeline%20(1).png)
     expanded by integrating additional tools, such as live web search,
     allowing it to dynamically retrieve updated information if the
     embedded metadata indicates a stored policy is outdated.
+
+# Questions? {.center}
 
 ## References

@@ -1,7 +1,7 @@
 ---
 title: "Enhancing Agentic RAG: Optimizing Hybrid Retrieval for an Autonomous Academic Advising Agent"
 author: "Cheyanne Allred-Lopez (Advisor: Dr. Cohen)"
-date: '`r Sys.Date()`'
+date: today
 format: 
   html:
     code-fold: true
