@@ -164,11 +164,6 @@ ability to answer the user’s query using only that document’s content.
 The authors demonstrate that this method of evaluation is highly
 computationally efficient, reducing runtime complexity by avoiding the
 quadratic cost penalty applied by standard transformers to long inputs.
-
-Upon evaluation, the authors found that eRAG is 2.5 times faster and
-significantly more memory-efficient than traditional end-to-end
-evaluation systems. eRAG also consistently outperformed more traditional
-systems, including the KILT benchmark and Relevance Annotation with LLM.
 This technique is directly applicable to the development of an
 intelligent advisor, as isolating the retriever enables greater
 visibility into how different indexing and chunking optimizations impact
@@ -883,7 +878,7 @@ minimum length to ensure enough content for question generation. 50
 documents were randomly sampled without replacement, using Python's
 `random` module. `Claude Haiku 4.5` was used to generate a single
 natural language QA pair per document. Limiting content generation per
-document ensures broad topical coverage of the corpus and prevents
+document ensures broad coverage of the topics contained within the corpus and prevents
 over-indexing a single document. @fig-LLM-QA-Generation below shows the
 prompt used to generate the question and ground truth pairs.
 
@@ -982,13 +977,11 @@ topics.
 
 ## Conclusion
 
-Academic advising is the perfect use case for an agentic RAG system. It's an information-rich field, where university policies and course offerings change frequently. Additionally, the consequences of inaccurate or incomplete responses are meaningful. While the RAG architecture has been extensively studied and documented, limited research exists evaluating the application of Advanced and Modular RAG techniques within domain-specific agentic deployments. This study addressed that gap by designing and systematically evaluating a hybrid retriever for an agentic RAG pipeline tailored to UWF. 
+Academic advising is the perfect use case for an agentic RAG system. University policies, course offerings, and other pertinent information can change frequently, and the consequences of inaccurate or incomplete responses are meaningful. While the RAG architecture has been extensively studied and documented, limited research exists evaluating the application of Advanced and Modular RAG techniques within domain-specific agentic deployments. This study addressed that gap by designing and systematically evaluating a hybrid retriever for an agentic RAG pipeline tailored to UWF. 
 
-RAG systems have four primary components: the user interface, knowledge base, retriever, and generator. In this study, the knowledge base and retriever were iteratively optimized to improve overall system performance. The system's knowledge base was constructed using a hierarchical-recursive chunking strategy, splitting documents on Level 1 and Level 2 headers before applying a 20\% sliding window overlap to preserve context across chunks. The knowledge base utilized a hybrid Pinecone index, containing both dense and sparse-encoded vectors. Dense vectors enable the retrieval of semantically-relevant results, while sparse vectors return exact keyword-matches. The hybrid index ensures that both of these results can be returned simultaneously for a single user query.
+RAG systems have four primary components: the user interface, knowledge base, retriever, and generator. In this study, the hybrid knowledge base and retriever were iteratively optimized to improve overall system performance. The system's knowledge base was constructed by first splitting documents using a hierarchical-recursive chunking strategy. Then, text chunks were further split using a recursive strategy against a fixed chunk size and a 20\% sliding window overlap to help preserve context across split chunks. The initial strategy split documents on Levels 1 through 4 headers, though performance testing later found this strategy to be too granular. Thus, the chunking strategy was amended to split documents on Levels 1 and 2 headers before proceeding with recursive fixed-size chunking.
 
-The knowledge base quality was further improved through a two-stage filtering process. Rule-based filtering was used to remove non-substantive chunks, while an LLM was employed to evaluate semantically ambiguous sections on a case-by-case basis. All chunks were enriched with metadata prior to vectorization. This provides the the retriever with additional context. Additionally, all vectors were normalized using Euclidean normalization, ensuring that dense and sparse embeddings are weighted and returned equally by the retriever. 
-
-The agentic RAG system was built upon a single-agent ReAct architecture using the LangGraph framework. The framework enables autonomous query optimization, iterative retrieval, and multi-turn conversational memory.
+The knowledge base quality was further improved through a two-stage filtering process. Rule-based filtering was used to remove non-substantive chunks, while an LLM was employed to evaluate semantically ambiguous sections on a case-by-case basis. All chunks were enriched with metadata prior to vectorization, an application of an Advanced RAG technique which provides the retriever with additional context. Additionally, all vectors were normalized using Euclidean normalization, ensuring that dense and sparse embeddings are weighted and returned equally by the retriever. 
 
 Retriever performance was evaluated using an iterative methodology. Two independent 50-question datasets were used; one dataset was used during development, while the second dataset was held out for final, independent testing. Because the evaluation pipeline utilized LLM-as-a-judge for metric computation, each configuration was tested five times to minimize variability in the LLM's evaluation. The optimized pipeline achieved an Average 
 Context Recall of 0.89 and an Average Context Precision of 0.77 on the 
